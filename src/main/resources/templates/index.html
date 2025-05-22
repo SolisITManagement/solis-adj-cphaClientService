@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>CPhA Request Publisher to Google Pub/Sub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #fff8f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+      max-width: 900px;
+      margin-top: 30px;
+    }
+
+    h1 {
+      color: #d35400;
+      font-weight: bold;
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+    }
+
+    .btn-orange {
+      background-color: #e67e22;
+      color: white;
+      border: none;
+    }
+
+    .btn-orange:hover {
+      background-color: #d35400;
+    }
+
+    textarea {
+      font-family: monospace;
+      resize: none;
+      overflow: hidden;
+      width: 100%;
+      border: 1px solid #ccc;
+      background-color: #fdf8f4;
+    }
+
+    pre {
+      background-color: #fff3e0;
+      padding: 10px;
+      border-left: 4px solid #e67e22;
+      color: #333;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    label {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>CPhA Request Publisher to Google PubSub</h1>
+  <form id="submitForm" action="/submit" method="post">
+    <div class="row mb-3">
+      <div class="col">
+        <label>UID</label>
+        <input type="text" id="uid" class="form-control" value="Lakhbir-1" required>
+      </div>
+      <div class="col">
+        <label>Store Number</label>
+        <input type="text" id="storeNumber" class="form-control" value="203" required>
+      </div>
+    </div>
+
+    <h5>Section A</h5>
+    <div class="row mb-3">
+      <div class="col"><label>IIN</label><input type="text" id="iin" class="form-control" value="123456"></div>
+      <div class="col"><label>Version Number</label><input type="text" id="versionNumber" class="form-control" value="03"></div>
+      <div class="col"><label>Transaction Code</label><input type="text" id="transactionCode" class="form-control" value="01"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Provider Software ID</label><input type="text" id="providerSoftwareId" class="form-control" value="XY"></div>
+      <div class="col"><label>Provider Software Version</label><input type="text" id="providerSoftwareVersion" class="form-control" value="01"></div>
+      <div class="col"><label>Active Device ID</label><input type="text" id="activeDeviceId" class="form-control" value="DEVICE01"></div>
+    </div>
+
+    <h5>Section B</h5>
+    <div class="row mb-3">
+      <div class="col"><label>Pharmacy ID Code</label><input type="text" id="pharmacyIdCode" class="form-control" value="PHARM12345"></div>
+      <div class="col"><label>Provider Transaction Date</label><input type="text" id="providerTransactionDate" class="form-control" value="240512"></div>
+      <div class="col"><label>Trace Number</label><input type="text" id="traceNumber" class="form-control" value="000123"></div>
+    </div>
+
+    <h5>Section C - Patient Info</h5>
+    <div class="row mb-3">
+      <div class="col"><label>Carrier ID</label><input type="text" id="carrierId" class="form-control" value="AB"></div>
+      <div class="col"><label>Group Number or Code</label><input type="text" id="groupNumber" class="form-control" value="GROUP1234"></div>
+      <div class="col"><label>Client ID</label><input type="text" id="clientId" class="form-control" value="CLIENT123456789"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Patient Code</label><input type="text" id="patientCode" class="form-control" value="PC1"></div>
+      <div class="col"><label>Patient DOB</label><input type="text" id="patientDob" class="form-control" value="19900101"></div>
+      <div class="col"><label>Cardholder Identity</label><input type="text" id="cardholderIdentity" class="form-control" value="CH123"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Relationship</label><input type="text" id="relationship" class="form-control" value="1"></div>
+      <div class="col"><label>Patient First Name</label><input type="text" id="firstName" class="form-control" value="John"></div>
+      <div class="col"><label>Patient Last Name</label><input type="text" id="lastName" class="form-control" value="Doe"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Provincial Health Care ID Code</label><input type="text" id="phcid" class="form-control" value="PHCID1234567"></div>
+      <div class="col"><label>Patient Gender</label><input type="text" id="gender" class="form-control" value="M"></div>
+    </div>
+
+    <h5>Section D - Drug & Prescription Info</h5>
+    <div class="row mb-3">
+      <div class="col"><label>Medical Reason Reference</label><input type="text" id="reasonRef" class="form-control" value="R"></div>
+      <div class="col"><label>Reason for Use</label><input type="text" id="reasonUse" class="form-control" value="REASON"></div>
+      <div class="col"><label>New/Refill Code</label><input type="text" id="refillCode" class="form-control" value="N"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Original Prescription Number</label><input type="text" id="originalRx" class="form-control" value="123456789"></div>
+      <div class="col"><label>Refill Authorizations</label><input type="text" id="refillAuth" class="form-control" value="02"></div>
+      <div class="col"><label>Current Rx Number</label><input type="text" id="currentRx" class="form-control" value="987654321"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>DIN /GP# / PIN</label><input type="text" id="din" class="form-control" value="12345678"></div>
+      <div class="col"><label>SSC</label><input type="text" id="ssc" class="form-control" value="SSC"></div>
+      <div class="col"><label>Quantity</label><input type="text" id="quantity" class="form-control" value="001000"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Days Supply</label><input type="text" id="daysSupply" class="form-control" value="030"></div>
+      <div class="col"><label>Prescriber ID Reference</label><input type="text" id="prescriberRef" class="form-control" value="PR"></div>
+      <div class="col"><label>Prescriber ID</label><input type="text" id="prescriberId" class="form-control" value="DRID123456"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Product Selection</label><input type="text" id="productSelection" class="form-control" value="1"></div>
+      <div class="col"><label>Unlisted Compound</label><input type="text" id="unlistedCompound" class="form-control" value="0"></div>
+      <div class="col"><label>Special Authorization Code</label><input type="text" id="authCode" class="form-control" value="AUTH123"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Intervention Codes</label><input type="text" id="intervention" class="form-control" value="INT1"></div>
+      <div class="col"><label>Drug Cost</label><input type="text" id="drugCost" class="form-control" value="050000"></div>
+      <div class="col"><label>Cost Upcharge</label><input type="text" id="upcharge" class="form-control" value="1000"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Professional Fee</label><input type="text" id="fee" class="form-control" value="1500"></div>
+      <div class="col"><label>Compounding Charge</label><input type="text" id="compoundCharge" class="form-control" value="00500"></div>
+      <div class="col"><label>Compounding Time</label><input type="text" id="compoundTime" class="form-control" value="30"></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col"><label>Special Services Fees</label><input type="text" id="servicesFee" class="form-control" value="02000"></div>
+      <div class="col"><label>Previously Paid</label><input type="text" id="previouslyPaid" class="form-control" value="000000"></div>
+      <div class="col"><label>Pharmacist ID</label><input type="text" id="pharmacistId" class="form-control" value="PHM123"></div>
+    </div>
+    <div class="mb-3">
+      <label>Adjudication Date</label>
+      <input type="text" id="adjudicationDate" class="form-control" value="250512">
+    </div>
+
+    <div class="mb-3">
+      <label>Generated JSON Payload</label>
+      <textarea name="jsonData" id="jsonData" class="form-control" readonly></textarea>
+    </div>
+    <button type="submit" class="btn btn-orange w-100">Submit</button>
+  </form>
+
+  <div class="mt-4" th:if="${response}">
+    <h5 class="text-success">Response:</h5>
+    <pre th:text="${response}"></pre>
+  </div>
+</div>
+
+<script>
+  const getVal = id => document.getElementById(id).value.trim();
+  const updateJsonPreview = () => {
+    const payload = {
+      Header: {
+        "UID": getVal("uid"),
+        "Store Number": getVal("storeNumber")
+      },
+      A: {
+        "IIN": getVal("iin"),
+        "Version Number": getVal("versionNumber"),
+        "Transaction Code": getVal("transactionCode"),
+        "Provider Software ID": getVal("providerSoftwareId"),
+        "Provider Software Version": getVal("providerSoftwareVersion"),
+        "Active Device ID": getVal("activeDeviceId")
+      },
+      B: {
+        "Pharmacy ID Code": getVal("pharmacyIdCode"),
+        "Provider Transaction Date": getVal("providerTransactionDate"),
+        "Trace Number": getVal("traceNumber")
+      },
+      C: {
+        "Carrier ID": getVal("carrierId"),
+        "Group Number or Code": getVal("groupNumber"),
+        "Client ID # or Code": getVal("clientId"),
+        "Patient Code": getVal("patientCode"),
+        "Patient DOB": getVal("patientDob"),
+        "Cardholder Identity": getVal("cardholderIdentity"),
+        "Relationship": getVal("relationship"),
+        "Patient First Name": getVal("firstName"),
+        "Patient Last Name": getVal("lastName"),
+        "Provincial Health Care ID Code": getVal("phcid"),
+        "Patient Gender": getVal("gender")
+      },
+      D: {
+        "Medical Reason Reference": getVal("reasonRef"),
+        "Medical Condition / Reason for Use": getVal("reasonUse"),
+        "New/Refill Code": getVal("refillCode"),
+        "Original Prescription Number": getVal("originalRx"),
+        "Refill / Repeat Authorizations": getVal("refillAuth"),
+        "Current Rx Number": getVal("currentRx"),
+        "DIN /GP# / PIN": getVal("din"),
+        "SSC": getVal("ssc"),
+        "Quantity": getVal("quantity"),
+        "Days Supply": getVal("daysSupply"),
+        "Prescriber ID Reference": getVal("prescriberRef"),
+        "Prescriber ID": getVal("prescriberId"),
+        "Product Selection": getVal("productSelection"),
+        "Unlisted Compound": getVal("unlistedCompound"),
+        "Special Authorization Number or Code": getVal("authCode"),
+        "Intervention and Exception Codes": getVal("intervention"),
+        "Drug Cost / Product Value": getVal("drugCost"),
+        "Cost Upcharge": getVal("upcharge"),
+        "Professional Fee": getVal("fee"),
+        "Compounding Charge": getVal("compoundCharge"),
+        "Compounding Time": getVal("compoundTime"),
+        "Special Services Fee(s)": getVal("servicesFee"),
+        "Previously Paid": getVal("previouslyPaid"),
+        "Pharmacist ID": getVal("pharmacistId"),
+        "Adjudication Date": getVal("adjudicationDate")
+      }
+    };
+
+    const jsonOutput = document.getElementById("jsonData");
+    jsonOutput.value = JSON.stringify(payload, null, 2);
+    jsonOutput.style.height = "auto";
+    jsonOutput.style.height = (jsonOutput.scrollHeight) + "px";
+  };
+
+  document.querySelectorAll("input").forEach(el =>
+    el.addEventListener("input", updateJsonPreview)
+  );
+
+  window.addEventListener("DOMContentLoaded", updateJsonPreview);
+</script>
+</body>
+</html>
