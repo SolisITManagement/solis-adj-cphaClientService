@@ -13,6 +13,7 @@ public class CphaClientService {
     private final WebClient webClient = WebClient.create();
 
     public String sendJsonToPublisher(String jsonPayload) {
+    	System.out.println("calling Data service: " + targetUrl);
         return webClient.post()
                 .uri(targetUrl)
                 .bodyValue(jsonPayload)
