@@ -32,13 +32,18 @@
     .btn-orange:hover {
       background-color: #d35400;
     }
+
+    .btn + .btn {
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
   <div class="card text-center">
-    <h2 class="mb-4">Welcome to CPhA Pub/Sub UI</h2>
-    <p class="mb-4">Click below to submit raw JSON payload directly.</p>
-    <a href="/jsononly" class="btn btn-orange btn-lg w-100">Go to JSON Submission</a>
+    <h2 class="mb-4">Welcome to CPhA Adjudication</h2>
+    <p class="mb-4">Click below to submit raw JSON payload directly or view Totals Request + Response JSON.</p>
+    <a href="/jsononly" class="btn btn-orange btn-lg w-100">Adjudicate Claim</a>
+    <a href="/total-and-details" class="btn btn-orange btn-lg w-100">Get Totals Req &amp; Response</a>
   </div>
 </body>
 </html>

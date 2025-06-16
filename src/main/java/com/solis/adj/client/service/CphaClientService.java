@@ -7,19 +7,33 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class CphaClientService {
 
-    @Value("${target.service.url}")
-    private String targetUrl;
+    @Value("${target.adjudicate.service.url}")
+    private String adjudicatorPublisherUrl;
+    
+    @Value("${target.totals.service.url}")
+    private String totalsPublisherUrl;
 
     private final WebClient webClient = WebClient.create();
 
     public String sendJsonToPublisher(String jsonPayload) {
-    	System.out.println("calling Data service: " + targetUrl);
+    	System.out.println("calling Data service: " + adjudicatorPublisherUrl);
         return webClient.post()
-                .uri(targetUrl)
+                .uri(adjudicatorPublisherUrl)
                 .bodyValue(jsonPayload)
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorReturn("Error calling service")
                 .block();
     }
+
+	public String sendJsonPublishTotals(String jsonPayload) {
+		System.out.println("calling Data service: " + totalsPublisherUrl);
+        return webClient.post()
+                .uri(totalsPublisherUrl)
+                .bodyValue(jsonPayload)
+                .retrieve()
+                .bodyToMono(String.class)
+                .onErrorReturn("Error calling service")
+                .block();
+	}
 }

@@ -97,4 +97,47 @@ public class ClientController {
 		model.addAttribute("jsonData", jsonData);
 		return "jsononly";
 	}
+	
+	@GetMapping("/total-and-details")
+	public String TotalAndDetails(Model model) {
+		String defaultJson = """
+		{
+          "Header": {
+            "UID": "total-request-123",
+            "Store Number": "203",
+            "Type": "totals",
+            "Format": "cpha",
+            "Source": "client",
+            "Date": "2025-06-11 11:24:30"
+          },
+          "TotalsRequest": {
+            "IIN": "123456",
+            "Version Number": "03",
+            "Transaction Code": "01",
+            "Provider Software ID": "XY",
+            "Provider Software Version": "01",
+            "Active Device ID": "DEVICE01",
+            "Pharmacy ID Code": "PHARM12345",
+            "Provider Transaction Date": "240512",
+            "Trace Number": "000123",
+            "Carrier ID": "AB",
+            "Group Number or Code": "GROUP1234",
+            "Adjudication Date": "250512",
+            "Beginning of Record": "BOF000001",
+            "End of Record": "EOF000001"
+          }
+        }
+		""";
+		model.addAttribute("jsonTotData", defaultJson);
+		return "tot-req-and-res-json";
+	}
+	
+	@PostMapping("/totals")
+	public String submitTotalsJson(@RequestParam("jsonTotData") String jsonTotData, Model model) {
+		System.out.println("incoming jsonTotData: " + jsonTotData);
+		String response = clientService.sendJsonPublishTotals(jsonTotData);
+		model.addAttribute("totResponse", response);
+		model.addAttribute("jsonTotData", jsonTotData);
+		return "tot-req-and-res-json";
+	}
 }
