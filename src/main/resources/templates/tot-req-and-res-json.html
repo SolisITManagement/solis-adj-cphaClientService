@@ -81,35 +81,42 @@
   </style>
 </head>
 <body>
-  <div class="full-page">
-    <!-- Top Bar -->
-    <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
-        <form action="/" method="get" style="margin: 0;">
-	    	<button type="submit" class="btn btn-orange btn-sm">← Return to Main</button>
-	  </form>
-      <form method="post" action="/retryTotResponse" style="margin: 0;">
-        <button type="submit" class="btn btn-warning">Retry</button>
-      </form>
-    </div>
-    
-    <h1>Totals and Details</h1>
-    <form id="jsonTotForm" method="post" action="/totals" class="content">
-      <!-- Request Panel -->
-      <div class="panel">
-        <label for="jsonTotInput" class="form-label">Request JSON</label>
-        <textarea id="jsonTotInput" name="jsonTotData" th:text="${jsonTotData}"></textarea>
-      </div>
-
-      <!-- Response Panel -->
-      <div class="panel">
-        <label class="form-label">Response</label>
-        <pre th:text="${totResponse}" th:style="${totResponse} != null ? 'display: block;' : 'display: none;'">No response yet</pre>
-      </div>
+<div class="full-page">
+  <!-- Top Bar -->
+  <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+    <form action="/" method="get" style="margin: 0;">
+      	<button type="submit" class="btn btn-orange btn-sm">← Return to Main</button>
     </form>
-
-    <div class="submit-btn">
-      <button type="submit" form="jsonTotForm" class="btn btn-orange">Submit JSON</button>
-    </div>
+    <form method="post" action="/retryTotals" style="margin: 0;">
+      <button type="submit" class="btn btn-warning">Retry</button>
+    </form>
   </div>
+
+  <h1>Totals and Details</h1>
+  <form id="jsonTotForm" method="post" action="/totals" class="d-flex flex-row justify-content-between" style="gap: 10px; padding: 10px;">
+    <!-- Request Panel -->
+    <div class="panel" style="width: 48%; height: 500px; display: flex; flex-direction: column;">
+      <label for="jsonTotInput" class="form-label">Request JSON</label>
+      <textarea id="jsonTotInput" name="jsonTotData" class="form-control"
+                style="flex: 1; resize: none; overflow: auto; height: 100%;" th:text="${jsonTotData}"></textarea>
+    </div>
+
+    <!-- Response Panel -->
+    <div class="panel" style="width: 48%; height: 500px; display: flex; flex-direction: column;">
+      <label class="form-label">Response</label>
+      <pre th:text="${totResponse}"
+           style="flex: 1; overflow: auto; height: 100%; background-color: #fff3e0; border-left: 4px solid #e67e22; padding: 10px; margin: 0;">
+No response yet
+      </pre>
+        <div th:if="${executionTime != null}" style="margin-top: 5px; font-size: 13px; color: #555;">
+    		Execution Time: <span th:text="${executionTime}">0.000</span> seconds
+  		</div>
+    </div>
+  </form>
+
+  <div class="submit-btn">
+    <button type="submit" form="jsonTotForm" class="btn btn-orange w-100">Submit JSON</button>
+  </div>
+</div>
 </body>
 </html>

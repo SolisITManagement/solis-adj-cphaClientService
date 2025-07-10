@@ -12,6 +12,10 @@ public class CphaClientService {
     
     @Value("${target.totals.service.url}")
     private String totalsPublisherUrl;
+    
+    @Value("${target.adjudicate.service.retry.url}")
+    private String adjRetryUrl;
+    
 
     private final WebClient webClient = WebClient.create();
 
@@ -33,7 +37,19 @@ public class CphaClientService {
                 .bodyValue(jsonPayload)
                 .retrieve()
                 .bodyToMono(String.class)
-                .onErrorReturn("Error calling service")
+                .onErrorReturn("Error calling Adjudication.. timed-out!!")
                 .block();
 	}
+	
+	public String retry(String jsonPayload) {
+		System.out.println("calling Data service: " + adjRetryUrl);
+        return webClient.post()
+                .uri(adjRetryUrl)
+                .bodyValue(jsonPayload)
+                .retrieve()
+                .bodyToMono(String.class)
+                .onErrorReturn("Error calling Adjudication.. timed-out!!")
+                .block();
+	}
+	
 }
