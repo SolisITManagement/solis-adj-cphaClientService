@@ -16,6 +16,8 @@ public class CphaClientService {
     @Value("${target.adjudicate.service.retry.url}")
     private String adjRetryUrl;
     
+    @Value("${target.dis.bc.hl7.event.url}")
+    private String bcHl7EventUrl;
 
     private final WebClient webClient = WebClient.create();
 
@@ -51,5 +53,17 @@ public class CphaClientService {
                 .onErrorReturn("Error calling Adjudication.. timed-out!!")
                 .block();
 	}
+
+	public String sendHL7Request(String jsonPayload) {
+		System.out.println("calling Data service: " + bcHl7EventUrl);
+        return webClient.post()
+                .uri(bcHl7EventUrl)
+                .bodyValue(jsonPayload)
+                .retrieve()
+                .bodyToMono(String.class)
+                .onErrorReturn("Error calling Find Canadidate.. timed-out!!")
+                .block();
+	}
+
 	
 }

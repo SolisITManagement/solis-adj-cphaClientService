@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>eHealth - BC Get Demographic Event</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background-color: #fff8f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .full-page {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    textarea, pre {
+      flex: 1;
+      resize: none;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      overflow: auto;
+      background-color: #fffdf9;
+    }
+
+    pre {
+      background-color: #fff3e0;
+      border-left: 4px solid #e67e22;
+    }
+
+    .submit-btn {
+      padding: 15px;
+      border-top: 1px solid #ccc;
+      background-color: #fff3e0;
+    }
+
+    .btn-orange {
+      background-color: #e67e22;
+      color: white;
+      width: 100%;
+    }
+
+    .btn-orange:hover {
+      background-color: #d35400;
+    }
+
+    h1 {
+      margin: 0;
+      padding: 10px;
+      background-color: #f7e9dd;
+      border-bottom: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+ <div class="full-page">
+  <!-- Top Bar -->
+  <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+    <form action="/" method="get" style="margin: 0;">
+      <button type="submit" class="btn btn-orange btn-sm">← Return to Main</button>
+    </form>
+      <button type="submit" name="action" value= "retryFindCandidate" form="jsonForm" class="btn btn-warning">Retry</button>
+  </div>
+
+  <h1>eHealth - Dispense Event Message</h1>
+
+  <form id="jsonForm" method="post" action="/callHl7Event" class="content d-flex" style="height: 500px;">
+    <!-- Request Panel -->
+    <div class="panel me-2" style="width: 50%; height: 100%; display: flex; flex-direction: column;">
+      <label for="jsonInput" class="form-label">Request</label>
+      <textarea id="jsonInput" name="jsonData" th:text="${jsonData}"
+        style="flex: 1; resize: none; font-family: monospace; font-size: 14px; padding: 10px; border: 1px solid #ccc; overflow: auto; background-color: #fffdf9;">
+      </textarea>
+    </div>
+    <input type="hidden" name="returnView" value="bc-dispense-event"/>
+    <!-- Response Panel -->
+    <div class="panel ms-2" style="width: 50%; height: 100%; display: flex; flex-direction: column;">
+      <label class="form-label">Response</label>
+      <pre th:text="${response}" th:style="${response} != null ? 'display: block;' : 'display: none;'"
+        style="flex: 1; font-family: monospace; font-size: 14px; padding: 10px; border: 1px solid #ccc; overflow: auto; background-color: #fff3e0; border-left: 4px solid #e67e22;">
+        No response yet
+      </pre>
+        <div th:if="${executionTime != null}" style="margin-top: 5px; font-size: 13px; color: #555;">
+    		Execution Time: <span th:text="${executionTime}">0.000</span> seconds
+  		</div>
+    </div>
+  </form>
+
+  <div class="submit-btn mt-2">
+    <button type="submit" name="action" value="callHl7Event" form="jsonForm" class="btn btn-orange" >Submit JSON</button>
+  </div>
+</div>
+
+</body>
+</html>

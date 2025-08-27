@@ -9,17 +9,17 @@
     body {
       background-color: #f4f8fc;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      padding: 20px;
     }
 
     .card {
-      padding: 30px;
-      max-width: 500px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-radius: 15px;
       background-color: #ffffff;
     }
 
@@ -27,6 +27,7 @@
       background-color: #e67e22;
       color: white;
       border: none;
+      transition: background-color 0.3s ease;
     }
 
     .btn-orange:hover {
@@ -34,16 +35,45 @@
     }
 
     .btn + .btn {
-      margin-top: 15px;
+      margin-top: 12px;
+    }
+
+    h2 {
+      font-weight: 600;
+      color: #34495e;
+    }
+
+    .section-title {
+      margin-bottom: 20px;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: #2c3e50;
     }
   </style>
 </head>
 <body>
-  <div class="card text-center">
-    <h2 class="mb-4">Welcome to CPhA Adjudication</h2>
-    <p class="mb-4">Click below to submit your Request..</p>
-    <a href="/jsononly" class="btn btn-orange btn-lg w-100">Adjudicate Claim</a>
-    <a href="/total-and-details" class="btn btn-orange btn-lg w-100">Totals &amp; Details Report</a>
+  <div class="container">
+    <h2 class="text-center mb-5">Welcome to Adjudication &amp; eHealth Events Demo</h2>
+    <div class="row g-4">
+      <!-- Adjudication Column -->
+      <div class="col-md-6">
+        <div class="card text-center h-100">
+          <div class="section-title">Adjudication</div>
+          <a href="/jsononly" class="btn btn-orange btn-lg w-100">Adjudicate Claim</a>
+          <a href="/total-and-details" class="btn btn-orange btn-lg w-100">Totals &amp; Details Report</a>
+        </div>
+      </div>
+
+      <!-- eHealth Column -->
+      <div class="col-md-6">
+        <div class="card text-center h-100">
+          <div class="section-title">eHealth</div>
+          <a href="/bc-find-candidate" class="btn btn-orange btn-lg w-100">Find Candidate Event</a>
+          <a href="/bc-get-demographics" class="btn btn-orange btn-lg w-100">Get Demographic Event</a>
+          <a href="/bc-dispense-event" class="btn btn-orange btn-lg w-100">Dispense Event</a>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>

@@ -8,7 +8,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class RequestFixedStringToJson {
 
-	    public ObjectNode parse(String fixedString) throws Exception  {
+	    public String parse(String fixedString) throws Exception  {
+	    	
 	        JSONObject request = new JSONObject();
 
 	        request.put("IIN", fixedString.substring(0, 6).trim());
@@ -59,7 +60,7 @@ public class RequestFixedStringToJson {
 
 	        ObjectMapper mapper = new ObjectMapper();
 	        ObjectNode requestNode = (ObjectNode) mapper.readTree(request.toString());
-	        return requestNode;
+	        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestNode);
 	    }
 	    
 	    public ObjectNode decodeFixedRequest(String fixed, ObjectMapper mapper) {
@@ -137,6 +138,14 @@ public class RequestFixedStringToJson {
 	    private String safeSubstring(String str, int start, int end) {
 	        if (start >= str.length()) return "";
 	        return str.substring(start, Math.min(str.length(), end));
+	    }
+	    
+	    public static void main(String[] args) throws Exception {
+	    	RequestFixedStringToJson fixed = new RequestFixedStringToJson();
+	    	String fixedStr = "1234560301XY01DEVICE01PHARM12345240512000123ABGROUP1234 CLIENT123456789PC119900101CH1231John        Doe            PHCID1234567 MRREASONN1234567890298765432112345678SSC001000030PRDRID12345610AUTH123 INT10500001000 1500 005003002000000000PHM123250512";
+	    	String json = fixed.parse(fixedStr);
+	    	System.out.println("json:" + json);
+	    	
 	    }
 	}
 
