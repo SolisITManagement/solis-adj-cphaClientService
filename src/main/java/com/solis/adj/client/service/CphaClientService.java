@@ -1,69 +1,72 @@
 package com.solis.adj.client.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
 public class CphaClientService {
 
-    @Value("${target.adjudicate.service.url}")
-    private String adjudicatorPublisherUrl;
-    
-    @Value("${target.totals.service.url}")
-    private String totalsPublisherUrl;
-    
-    @Value("${target.adjudicate.service.retry.url}")
-    private String adjRetryUrl;
-    
-    @Value("${target.dis.bc.hl7.event.url}")
-    private String bcHl7EventUrl;
+    private static final Logger log = LoggerFactory.getLogger(CphaClientService.class);
 
-    private final WebClient webClient = WebClient.create();
+    private final WebClient webClient;
+    private final String adjudicatorPublisherUrl;
+    private final String totalsPublisherUrl;
+    private final String adjRetryUrl;
+    private final String bcHl7EventUrl;
 
-    public String sendJsonToPublisher(String jsonPayload) {
-    	System.out.println("calling Data service: " + adjudicatorPublisherUrl);
-        return webClient.post()
-                .uri(adjudicatorPublisherUrl)
-                .bodyValue(jsonPayload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .onErrorReturn("Error calling service")
-                .block();
+    public CphaClientService(
+            WebClient webClient,
+            @Value("${target.adjudicate.service.url}") String adjudicatorPublisherUrl,
+            @Value("${target.totals.service.url}") String totalsPublisherUrl,
+            @Value("${target.adjudicate.service.retry.url}") String adjRetryUrl,
+            @Value("${target.dis.bc.hl7.event.url}") String bcHl7EventUrl) {
+        this.webClient = webClient;
+        this.adjudicatorPublisherUrl = adjudicatorPublisherUrl;
+        this.totalsPublisherUrl = totalsPublisherUrl;
+        this.adjRetryUrl = adjRetryUrl;
+        this.bcHl7EventUrl = bcHl7EventUrl;
     }
 
-	public String sendJsonPublishTotals(String jsonPayload) {
-		System.out.println("calling Data service: " + totalsPublisherUrl);
-        return webClient.post()
-                .uri(totalsPublisherUrl)
-                .bodyValue(jsonPayload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .onErrorReturn("Error calling Adjudication.. timed-out!!")
-                .block();
-	}
-	
-	public String retry(String jsonPayload) {
-		System.out.println("calling Data service: " + adjRetryUrl);
-        return webClient.post()
-                .uri(adjRetryUrl)
-                .bodyValue(jsonPayload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .onErrorReturn("Error calling Adjudication.. timed-out!!")
-                .block();
-	}
+    public String sendJsonToPublisher(String jsonPayload) {
+        log.info("Calling adjudication publish service: {}", adjudicatorPublisherUrl);
+        return postJson(adjudicatorPublisherUrl, jsonPayload, "adjudication publish");
+    }
 
-	public String sendHL7Request(String jsonPayload) {
-		System.out.println("calling Data service: " + bcHl7EventUrl);
-        return webClient.post()
-                .uri(bcHl7EventUrl)
-                .bodyValue(jsonPayload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .onErrorReturn("Error calling Find Canadidate.. timed-out!!")
-                .block();
-	}
+    public String sendJsonPublishTotals(String jsonPayload) {
+        log.info("Calling totals service: {}", totalsPublisherUrl);
+        return postJson(totalsPublisherUrl, jsonPayload, "totals");
+    }
 
-	
+    public String retry(String jsonPayload) {
+        log.info("Calling adjudication retry service: {}", adjRetryUrl);
+        return postJson(adjRetryUrl, jsonPayload, "adjudication retry");
+    }
+
+    public String sendHL7Request(String jsonPayload) {
+        log.info("Calling BC HL7 event service: {}", bcHl7EventUrl);
+        return postJson(bcHl7EventUrl, jsonPayload, "BC HL7 event");
+    }
+
+    private String postJson(String url, String payload, String serviceName) {
+        try {
+            return webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.error("HTTP {} from {} service: {}", e.getStatusCode(), serviceName, e.getResponseBodyAsString(), e);
+            return "{\"error\": \"HTTP " + e.getStatusCode().value() + " from " + serviceName + " service\"}";
+        } catch (Exception e) {
+            log.error("Error calling {} service at {}: {}", serviceName, url, e.getMessage(), e);
+            return "{\"error\": \"Error calling " + serviceName + " service: " + e.getMessage() + "\"}";
+        }
+    }
 }

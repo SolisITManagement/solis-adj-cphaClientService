@@ -1,0 +1,868 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Solis DIS - Architecture &amp; Implementation Report</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page {
+    size: letter;
+    margin: 1in;
+  }
+  body {
+    font-family: 'Calibri', 'Segoe UI', sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #2c3e50;
+  }
+  h1 {
+    font-size: 22pt;
+    color: #1a5276;
+    border-bottom: 3px solid #e67e22;
+    padding-bottom: 8px;
+    margin-top: 30px;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #2980b9;
+    border-bottom: 1px solid #bdc3c7;
+    padding-bottom: 5px;
+    margin-top: 25px;
+  }
+  h3 {
+    font-size: 13pt;
+    color: #e67e22;
+    margin-top: 18px;
+  }
+  p {
+    margin: 6px 0 10px 0;
+    text-align: justify;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 18px 0;
+  }
+  th {
+    background-color: #2c3e50;
+    color: #ffffff;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 10pt;
+    border: 1px solid #2c3e50;
+  }
+  td {
+    padding: 6px 12px;
+    border: 1px solid #bdc3c7;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  tr:nth-child(even) {
+    background-color: #f2f3f4;
+  }
+  .cover-title {
+    font-size: 28pt;
+    color: #1a5276;
+    text-align: center;
+    margin-top: 180px;
+    font-weight: bold;
+  }
+  .cover-subtitle {
+    font-size: 16pt;
+    color: #e67e22;
+    text-align: center;
+    margin-top: 15px;
+  }
+  .cover-info {
+    font-size: 11pt;
+    color: #7f8c8d;
+    text-align: center;
+    margin-top: 40px;
+  }
+  ul {
+    margin: 6px 0 12px 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+  .highlight-box {
+    background-color: #eaf2f8;
+    border-left: 4px solid #2980b9;
+    padding: 10px 15px;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .warning-box {
+    background-color: #fef9e7;
+    border-left: 4px solid #f39c12;
+    padding: 10px 15px;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .status-implemented { color: #27ae60; font-weight: bold; }
+  .status-pending { color: #e74c3c; font-weight: bold; }
+  .mandatory { color: #e74c3c; font-weight: bold; }
+  .optional { color: #95a5a6; font-weight: bold; }
+  .pagebreak { page-break-before: always; }
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    background-color: #f4f4f4;
+    padding: 1px 4px;
+    font-size: 10pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div style="page-break-after: always;">
+  <p class="cover-title">Solis Drug Information System (DIS)</p>
+  <p class="cover-subtitle">Architecture, Technology Stack &amp; Implementation Report</p>
+  <p class="cover-subtitle" style="font-size: 12pt; color: #7f8c8d;">PharmaNet Conformance Standards v3.7</p>
+  <p class="cover-info">
+    <strong>Project:</strong> Solis DIS &mdash; BC PharmaNet Integration<br/>
+    <strong>Platform:</strong> Google Cloud Platform (GCP)<br/>
+    <strong>Version:</strong> 1.0<br/>
+    <strong>Date:</strong> April 2026<br/>
+    <strong>Classification:</strong> Internal / Technical
+  </p>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="pagebreak">
+<h1>Table of Contents</h1>
+<ol style="font-size: 11pt; line-height: 2;">
+  <li>Executive Summary</li>
+  <li>System Architecture Overview</li>
+  <li>Technology Stack</li>
+  <li>Service Descriptions &amp; Responsibilities
+    <ol type="a" style="line-height: 2;">
+      <li>Client Service (cphaClientService)</li>
+      <li>Data Service (dis-dataservice)</li>
+      <li>Enrichment Service (dis-enrichmentservice)</li>
+    </ol>
+  </li>
+  <li>Google Cloud Pub/Sub &mdash; Message Broker</li>
+  <li>Google Cloud Firestore &mdash; Database</li>
+  <li>Asynchronous, Stateless &amp; Fault-Resilient Design</li>
+  <li>Message Flow &mdash; End-to-End Request Lifecycle</li>
+  <li>Implemented PharmaNet Messages</li>
+  <li>Remaining / Left-Over Messages</li>
+  <li>Appendix: Deployment &amp; Configuration</li>
+</ol>
+</div>
+
+<!-- ==================== 1. EXECUTIVE SUMMARY ==================== -->
+<div class="pagebreak">
+<h1>1. Executive Summary</h1>
+<p>
+  The <strong>Solis Drug Information System (DIS)</strong> is a cloud-native, microservices-based platform designed to facilitate the integration between pharmacy software systems and British Columbia's <strong>PharmaNet</strong> network. The system handles two primary domains:
+</p>
+<ul>
+  <li><strong>Adjudication (CPhA)</strong> &mdash; Processing pharmacy claims using the Canadian Pharmacists Association (CPhA) standard format for drug adjudication and reconciliation.</li>
+  <li><strong>eHealth / BC PharmaNet</strong> &mdash; Exchanging HL7 v2 and HL7 v3 messages with PharmaNet for patient demographics, medication profiles, prescriptions, dispense events, and other mandatory pharmacy transactions.</li>
+</ul>
+<p>
+  The architecture is built entirely on <strong>Google Cloud Platform (GCP)</strong>, leveraging Cloud Run for serverless compute, Pub/Sub for asynchronous messaging, and Firestore for persistent storage. The design ensures the system is <strong>stateless, asynchronous, and fault-resilient</strong>, capable of handling high-throughput pharmacy transactions with reliable delivery guarantees.
+</p>
+</div>
+
+<!-- ==================== 2. ARCHITECTURE OVERVIEW ==================== -->
+<div class="pagebreak">
+<h1>2. System Architecture Overview</h1>
+<p>
+  The Solis DIS platform consists of <strong>three microservices</strong> working together in a decoupled, event-driven architecture:
+</p>
+
+<div class="highlight-box">
+  <strong>Architecture Flow:</strong><br/><br/>
+  <code>[Client Service]</code> &rarr; HTTP POST &rarr; <code>[Data Service]</code> &rarr; Pub/Sub Publish &rarr; <code>[Enrichment Service]</code><br/>
+  <br/>
+  <code>[Enrichment Service]</code> &rarr; Builds HL7 Message &rarr; Calls PharmaNet/PCR &rarr; Saves Response to Firestore<br/>
+  <br/>
+  <code>[Data Service]</code> &rarr; Polls Firestore for response &rarr; Returns to <code>[Client Service]</code>
+</div>
+
+<h3>High-Level Flow</h3>
+<ol>
+  <li>The <strong>Client Service</strong> (UI layer) sends a JSON request via HTTP to the <strong>Data Service</strong>.</li>
+  <li>The <strong>Data Service</strong> publishes the message to a <strong>Google Cloud Pub/Sub topic</strong> and begins polling <strong>Firestore</strong> for a response.</li>
+  <li>The <strong>Enrichment Service</strong> receives the message via <strong>Pub/Sub push subscription</strong>, enriches the payload, builds the appropriate <strong>HL7 v2 or HL7 v3 message</strong>, and sends it to PharmaNet or the Provincial Client Registry (PCR).</li>
+  <li>The Enrichment Service writes the complete response (including the built HL7 request, the PharmaNet/PCR response, and metadata) to <strong>Firestore</strong>.</li>
+  <li>The Data Service detects the response in Firestore and returns the full document back to the Client Service.</li>
+  <li>The Client Service renders the response in the UI, showing the HL7 Request, HL7 Response, and the full database document.</li>
+</ol>
+
+<h3>Architecture Diagram (Logical)</h3>
+<table>
+  <tr>
+    <th style="width:25%; text-align:center;">Layer</th>
+    <th style="width:25%; text-align:center;">Service</th>
+    <th style="width:25%; text-align:center;">Platform</th>
+    <th style="width:25%; text-align:center;">Communication</th>
+  </tr>
+  <tr>
+    <td style="text-align:center;">Presentation / UI</td>
+    <td style="text-align:center;">cphaClientService</td>
+    <td style="text-align:center;">Cloud Run / Local</td>
+    <td style="text-align:center;">HTTP &rarr; Data Service</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;">API / Orchestration</td>
+    <td style="text-align:center;">dis-dataservice</td>
+    <td style="text-align:center;">Cloud Run</td>
+    <td style="text-align:center;">Pub/Sub + Firestore</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;">Processing / Integration</td>
+    <td style="text-align:center;">dis-enrichmentservice</td>
+    <td style="text-align:center;">Cloud Run</td>
+    <td style="text-align:center;">Pub/Sub &rarr; PharmaNet/PCR</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;">Messaging</td>
+    <td style="text-align:center;">Google Cloud Pub/Sub</td>
+    <td style="text-align:center;">GCP Managed</td>
+    <td style="text-align:center;">Push Subscription</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;">Storage</td>
+    <td style="text-align:center;">Google Cloud Firestore</td>
+    <td style="text-align:center;">GCP Managed</td>
+    <td style="text-align:center;">Document DB (NoSQL)</td>
+  </tr>
+</table>
+</div>
+
+<!-- ==================== 3. TECHNOLOGY STACK ==================== -->
+<div class="pagebreak">
+<h1>3. Technology Stack</h1>
+
+<table>
+  <tr>
+    <th style="width:30%;">Component</th>
+    <th style="width:30%;">Technology</th>
+    <th style="width:40%;">Purpose</th>
+  </tr>
+  <tr>
+    <td><strong>Language</strong></td>
+    <td>Java 21</td>
+    <td>Core programming language across all services</td>
+  </tr>
+  <tr>
+    <td><strong>Framework</strong></td>
+    <td>Spring Boot 3.2.5</td>
+    <td>Microservice framework with auto-configuration, dependency injection, and embedded server</td>
+  </tr>
+  <tr>
+    <td><strong>HTTP Client</strong></td>
+    <td>Spring WebFlux (WebClient)</td>
+    <td>Non-blocking, reactive HTTP client for inter-service communication</td>
+  </tr>
+  <tr>
+    <td><strong>Template Engine</strong></td>
+    <td>Thymeleaf</td>
+    <td>Server-side HTML rendering for the Client Service UI</td>
+  </tr>
+  <tr>
+    <td><strong>JSON Processing</strong></td>
+    <td>Jackson (ObjectMapper)</td>
+    <td>JSON serialization/deserialization, pretty-printing, and tree manipulation</td>
+  </tr>
+  <tr>
+    <td><strong>Build Tool</strong></td>
+    <td>Apache Maven</td>
+    <td>Dependency management and build automation</td>
+  </tr>
+  <tr>
+    <td><strong>Messaging</strong></td>
+    <td>Google Cloud Pub/Sub</td>
+    <td>Asynchronous, decoupled message delivery between Data Service and Enrichment Service</td>
+  </tr>
+  <tr>
+    <td><strong>Database</strong></td>
+    <td>Google Cloud Firestore</td>
+    <td>NoSQL document database for storing request/response pairs, keyed by message ID</td>
+  </tr>
+  <tr>
+    <td><strong>Compute</strong></td>
+    <td>Google Cloud Run</td>
+    <td>Serverless container platform with autoscaling (0 to N instances)</td>
+  </tr>
+  <tr>
+    <td><strong>Region</strong></td>
+    <td>northamerica-northeast1 (Montreal)</td>
+    <td>GCP region for Canadian data residency compliance</td>
+  </tr>
+  <tr>
+    <td><strong>Health Standards</strong></td>
+    <td>HL7 v2, HL7 v3, CPhA</td>
+    <td>Healthcare interoperability standards for PharmaNet communication</td>
+  </tr>
+  <tr>
+    <td><strong>UI Framework</strong></td>
+    <td>Bootstrap 5.3</td>
+    <td>Responsive CSS framework for the Client Service web interface</td>
+  </tr>
+  <tr>
+    <td><strong>Logging</strong></td>
+    <td>SLF4J + Logback</td>
+    <td>Structured logging across all services</td>
+  </tr>
+</table>
+</div>
+
+<!-- ==================== 4. SERVICE DESCRIPTIONS ==================== -->
+<div class="pagebreak">
+<h1>4. Service Descriptions &amp; Responsibilities</h1>
+
+<h2>4a. Client Service (solis-adj-cphaClientService)</h2>
+<table>
+  <tr><th style="width:25%;">Attribute</th><th>Details</th></tr>
+  <tr><td>Port</td><td>9090</td></tr>
+  <tr><td>Role</td><td>Presentation layer / Test client UI</td></tr>
+  <tr><td>Cloud Run URL</td><td>Runs locally or can be deployed to Cloud Run</td></tr>
+</table>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+  <li>Provides a web-based UI for submitting and testing all PharmaNet and CPhA messages.</li>
+  <li>Generates default JSON request payloads with auto-populated timestamps, message IDs, and event type codes.</li>
+  <li>Sends requests via HTTP POST to the Data Service using Spring WebFlux WebClient with configurable 60-second timeouts.</li>
+  <li>Parses the response from the Data Service (Firestore document JSON) and extracts <code>hl7Request</code> and <code>hl7Response</code> fields for display.</li>
+  <li>Renders the HL7 Request (built by GCP services), HL7 Response (from PharmaNet), and the full database response in separate, color-coded, formatted panels.</li>
+  <li>Auto-formats XML and JSON content in the response panels using client-side JavaScript.</li>
+</ul>
+
+<h2>4b. Data Service (solis-dis-dataservice)</h2>
+<table>
+  <tr><th style="width:25%;">Attribute</th><th>Details</th></tr>
+  <tr><td>Port</td><td>8080</td></tr>
+  <tr><td>Role</td><td>API gateway / Message orchestrator</td></tr>
+  <tr><td>Cloud Run URL</td><td>solis-dis-dataservice-809287589165.northamerica-northeast1.run.app</td></tr>
+</table>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+  <li>Receives incoming JSON requests from the Client Service at <code>/api/dis/bc/publish</code>.</li>
+  <li>Sanitizes JSON payloads (handles invalid escape sequences via <code>JsonSanitizer</code>).</li>
+  <li>Publishes the sanitized message to a <strong>Google Cloud Pub/Sub topic</strong>.</li>
+  <li>Polls <strong>Firestore</strong> for the response document using the message ID as the lookup key.</li>
+  <li>Returns the complete Firestore document (including <code>hl7Request</code>, <code>hl7Response</code>, status, and metadata) to the caller.</li>
+  <li>Handles CPhA adjudication requests separately (<code>/publish</code>, <code>/totals</code>, <code>/retryAdjResponse</code>).</li>
+</ul>
+
+<h2>4c. Enrichment Service (solis-dis-enrichmentservice)</h2>
+<table>
+  <tr><th style="width:25%;">Attribute</th><th>Details</th></tr>
+  <tr><td>Port</td><td>8080</td></tr>
+  <tr><td>Role</td><td>Message processor / HL7 builder / PharmaNet gateway</td></tr>
+  <tr><td>Cloud Run URL</td><td>solis-dis-enrichmentservice (Cloud Run, push subscription target)</td></tr>
+</table>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+  <li>Receives messages from Pub/Sub via <strong>push subscription</strong> (HTTP POST from Pub/Sub to the Cloud Run endpoint).</li>
+  <li>Routes messages to the appropriate HL7 builder based on <code>Event.eventTypeCode</code>:
+    <ul>
+      <li><strong>HL7 v3 messages</strong> (Find Candidates, Get Demographics) &rarr; builds SOAP/XML HL7 v3 messages for the Provincial Client Registry (PCR).</li>
+      <li><strong>HL7 v2 messages</strong> (TRP, TIP, TRX, TDU/TAC, TPI, TIL, DISPENSE) &rarr; builds pipe-delimited HL7 v2 segments (MSH, ZCA, ZCB, ZCC, ZPX, ZCD, ZZZ, etc.) for PharmaNet.</li>
+    </ul>
+  </li>
+  <li>Sends the constructed HL7 message to <strong>PharmaNet</strong> or the <strong>PCR</strong>.</li>
+  <li>Saves the complete result to <strong>Firestore</strong>, including:
+    <ul>
+      <li><code>hl7Request</code> &mdash; The HL7 message that was built and sent.</li>
+      <li><code>hl7Response</code> &mdash; The raw response received from PharmaNet/PCR.</li>
+      <li>Status, timestamps, and error details (if any).</li>
+    </ul>
+  </li>
+  <li>Handles JSON escape sequence issues (e.g., <code>\E</code> in HL7 encoding characters) via a character-by-character parser in <code>StringUtils.escapeInvalidBackslashes()</code>.</li>
+</ul>
+</div>
+
+<!-- ==================== 5. PUB/SUB ==================== -->
+<div class="pagebreak">
+<h1>5. Google Cloud Pub/Sub &mdash; Message Broker</h1>
+<p>
+  Google Cloud Pub/Sub serves as the central <strong>asynchronous message broker</strong> between the Data Service and the Enrichment Service. It decouples the two services completely, enabling independent scaling and fault isolation.
+</p>
+
+<h3>How Pub/Sub Is Used</h3>
+<table>
+  <tr><th style="width:25%;">Aspect</th><th>Details</th></tr>
+  <tr>
+    <td><strong>Publisher</strong></td>
+    <td>Data Service publishes JSON messages to a Pub/Sub <strong>topic</strong> upon receiving a request from the Client Service.</td>
+  </tr>
+  <tr>
+    <td><strong>Subscriber</strong></td>
+    <td>Enrichment Service subscribes via a <strong>push subscription</strong>. Pub/Sub delivers messages as HTTP POST requests to the Enrichment Service's Cloud Run endpoint.</td>
+  </tr>
+  <tr>
+    <td><strong>Delivery Mode</strong></td>
+    <td><strong>Push</strong> (changed from pull for cost optimization). Pub/Sub pushes messages to the Enrichment Service, eliminating the need for the service to continuously poll.</td>
+  </tr>
+  <tr>
+    <td><strong>Message Format</strong></td>
+    <td>JSON payload containing Header, Sender, Receiver, Candidate, Event, MSH, ZCA, ZCB, ZCC, ZPX, ZCD, ZZZ segments, and other PharmaNet-specific fields.</td>
+  </tr>
+  <tr>
+    <td><strong>Message ID</strong></td>
+    <td>Each message carries a unique <code>messageId</code> (20-character random string) used as the correlation key for Firestore lookups.</td>
+  </tr>
+  <tr>
+    <td><strong>Retry / Dead-Letter</strong></td>
+    <td>Pub/Sub automatically retries failed deliveries with exponential backoff. Messages that cannot be processed are retained per the subscription's acknowledgment deadline.</td>
+  </tr>
+</table>
+
+<h3>Benefits of Push Over Pull</h3>
+<ul>
+  <li><strong>Cost savings:</strong> No idle polling threads consuming Cloud Run CPU. The Enrichment Service only activates when a message arrives.</li>
+  <li><strong>Lower latency:</strong> Messages are delivered immediately upon publish, rather than waiting for the next poll cycle.</li>
+  <li><strong>Scales to zero:</strong> Cloud Run instances can scale to zero when there are no messages, reducing costs to near-zero during idle periods.</li>
+</ul>
+</div>
+
+<!-- ==================== 6. FIRESTORE ==================== -->
+<div class="pagebreak">
+<h1>6. Google Cloud Firestore &mdash; Database</h1>
+<p>
+  Google Cloud Firestore (NoSQL document database) is used as the <strong>shared state store</strong> between the Data Service and the Enrichment Service. It enables the asynchronous request-response correlation pattern.
+</p>
+
+<h3>How Firestore Is Used</h3>
+<table>
+  <tr><th style="width:25%;">Operation</th><th>Service</th><th>Details</th></tr>
+  <tr>
+    <td><strong>Write</strong></td>
+    <td>Enrichment Service</td>
+    <td>After processing the HL7 message and receiving a response from PharmaNet/PCR, the Enrichment Service writes the complete result document to Firestore, keyed by <code>messageId</code>.</td>
+  </tr>
+  <tr>
+    <td><strong>Read (Poll)</strong></td>
+    <td>Data Service</td>
+    <td>After publishing to Pub/Sub, the Data Service polls Firestore repeatedly (with configurable timeout, default 120s) looking for a document with the matching <code>messageId</code>.</td>
+  </tr>
+  <tr>
+    <td><strong>Read (Return)</strong></td>
+    <td>Data Service &rarr; Client</td>
+    <td>Once found, the full Firestore document is returned as JSON to the Client Service, which displays it in the UI.</td>
+  </tr>
+</table>
+
+<h3>Firestore Document Structure</h3>
+<div class="highlight-box">
+  <code>Collection: [messageType]</code><br/>
+  <code>Document ID: [messageId]</code><br/><br/>
+  Fields:<br/>
+  &nbsp;&nbsp;<code>hl7Request</code> &mdash; The HL7 v2/v3 message built by the Enrichment Service<br/>
+  &nbsp;&nbsp;<code>hl7Response</code> &mdash; The raw response from PharmaNet or PCR<br/>
+  &nbsp;&nbsp;<code>status</code> &mdash; Processing status (success, error)<br/>
+  &nbsp;&nbsp;<code>timestamp</code> &mdash; When the response was written<br/>
+  &nbsp;&nbsp;<code>originalRequest</code> &mdash; The original JSON request payload<br/>
+  &nbsp;&nbsp;<code>error</code> &mdash; Error details (if processing failed)
+</div>
+</div>
+
+<!-- ==================== 7. ASYNC / STATELESS / FAULT-RESILIENT ==================== -->
+<div class="pagebreak">
+<h1>7. Asynchronous, Stateless &amp; Fault-Resilient Design</h1>
+
+<h2>7.1 Asynchronous Processing</h2>
+<p>The system is fundamentally asynchronous. No service blocks on another service's processing:</p>
+<ul>
+  <li>The <strong>Data Service</strong> publishes a message to Pub/Sub and immediately begins polling Firestore &mdash; it does not wait for the Enrichment Service to process the message synchronously.</li>
+  <li>The <strong>Enrichment Service</strong> processes messages independently, triggered by Pub/Sub push delivery. It writes results to Firestore and acknowledges the Pub/Sub message.</li>
+  <li>The correlation between request and response happens through <strong>Firestore</strong> using the unique <code>messageId</code>, not through direct service-to-service calls.</li>
+</ul>
+
+<h2>7.2 Stateless Services</h2>
+<p>All three services are completely stateless:</p>
+<ul>
+  <li>No in-memory session state is stored between requests.</li>
+  <li>Each request carries all necessary context (message ID, event type, patient data) in the JSON payload.</li>
+  <li>Services can be restarted, scaled up, or scaled down without losing any data.</li>
+  <li>Cloud Run enforces statelessness &mdash; instances are ephemeral and may be terminated at any time.</li>
+  <li>All persistent state lives in <strong>Firestore</strong> (response data) and <strong>Pub/Sub</strong> (in-flight messages).</li>
+</ul>
+
+<h2>7.3 Fault Resilience</h2>
+<table>
+  <tr><th style="width:30%;">Failure Scenario</th><th>How It's Handled</th></tr>
+  <tr>
+    <td>Enrichment Service crashes mid-processing</td>
+    <td>Pub/Sub does not receive an ACK, so it <strong>redelivers the message</strong> to another instance (or the same instance after restart). No data is lost.</td>
+  </tr>
+  <tr>
+    <td>Data Service times out waiting</td>
+    <td>The Data Service returns a timeout error to the Client. The user can click <strong>Retry</strong> to re-poll Firestore &mdash; if the Enrichment Service completed in the meantime, the response is available.</td>
+  </tr>
+  <tr>
+    <td>Firestore write failure</td>
+    <td>The Enrichment Service logs the error and does <strong>not ACK</strong> the Pub/Sub message, triggering redelivery and a retry of the entire processing.</td>
+  </tr>
+  <tr>
+    <td>Network failure to PharmaNet</td>
+    <td>The Enrichment Service writes an <strong>error document</strong> to Firestore with the failure details, allowing the client to see the exact error and retry.</td>
+  </tr>
+  <tr>
+    <td>Cloud Run cold start delay</td>
+    <td>Mitigated by setting <code>--min-instances=1</code> on the Enrichment Service to keep at least one warm instance.</td>
+  </tr>
+  <tr>
+    <td>Invalid JSON / escape sequences</td>
+    <td>Both Data Service (<code>JsonSanitizer</code>) and Enrichment Service (<code>StringUtils</code>) include character-by-character parsers that fix invalid escape sequences (e.g., <code>\E</code> in HL7 encoding characters).</td>
+  </tr>
+  <tr>
+    <td>WebClient HTTP errors</td>
+    <td>All HTTP calls use <strong>try-catch</strong> with structured error responses returned as JSON, preventing cascading failures.</td>
+  </tr>
+</table>
+
+<div class="highlight-box">
+  <strong>Key Design Principle:</strong> The combination of Pub/Sub's at-least-once delivery guarantee, Firestore's durable storage, and stateless Cloud Run services ensures that <strong>no message is ever lost</strong>, even during partial outages, cold starts, or service restarts.
+</div>
+</div>
+
+<!-- ==================== 8. MESSAGE FLOW ==================== -->
+<div class="pagebreak">
+<h1>8. Message Flow &mdash; End-to-End Request Lifecycle</h1>
+<p>Below is the step-by-step lifecycle of a PharmaNet HL7 message (e.g., a Patient Profile request):</p>
+
+<table>
+  <tr><th style="width:8%;">Step</th><th style="width:20%;">Component</th><th>Action</th></tr>
+  <tr><td>1</td><td>User (Browser)</td><td>User selects "Patient Profile (TRP)" from the landing page and clicks <strong>Submit JSON</strong>.</td></tr>
+  <tr><td>2</td><td>Client Service</td><td>Sends HTTP POST to Data Service at <code>/api/dis/bc/publish</code> with the JSON payload containing Header, MSH, ZCA, ZCB, ZCC, ZPX, ZCD, Event, and other segments.</td></tr>
+  <tr><td>3</td><td>Data Service</td><td>Receives the request, sanitizes the JSON, and <strong>publishes</strong> the message to the Pub/Sub topic with the <code>messageId</code> as an attribute.</td></tr>
+  <tr><td>4</td><td>Pub/Sub</td><td>Delivers the message via <strong>push subscription</strong> (HTTP POST) to the Enrichment Service's Cloud Run endpoint.</td></tr>
+  <tr><td>5</td><td>Enrichment Service</td><td>Receives the message, determines the event type (<code>TRP</code>), and routes to the <strong>HL7 v2 builder</strong>.</td></tr>
+  <tr><td>6</td><td>Enrichment Service</td><td>Builds the complete HL7 v2 message (MSH|^~\&amp;|...|ZCA|...|ZCB|...) from the JSON fields.</td></tr>
+  <tr><td>7</td><td>Enrichment Service</td><td>Sends the HL7 v2 message to <strong>PharmaNet</strong> and receives the response.</td></tr>
+  <tr><td>8</td><td>Enrichment Service</td><td>Writes the complete result to <strong>Firestore</strong>: <code>{ hl7Request, hl7Response, status, timestamp, ... }</code>.</td></tr>
+  <tr><td>9</td><td>Enrichment Service</td><td>Acknowledges (ACKs) the Pub/Sub message.</td></tr>
+  <tr><td>10</td><td>Data Service</td><td>Detects the new Firestore document via polling and returns the full document JSON to the Client Service.</td></tr>
+  <tr><td>11</td><td>Client Service</td><td>Parses the response, extracts <code>hl7Request</code> and <code>hl7Response</code>, and renders all three panels: HL7 Request (blue), HL7 Response (green), Full Response from Database (orange).</td></tr>
+</table>
+</div>
+
+<!-- ==================== 9. IMPLEMENTED MESSAGES ==================== -->
+<div class="pagebreak">
+<h1>9. Implemented PharmaNet Messages</h1>
+<p>
+  The following messages have been implemented in the Client Service and are available for testing through the web UI. These cover the mandatory transactions required for <strong>PharmaNet Conformance Standards v3.7</strong>.
+</p>
+
+<h2>9.1 Adjudication Messages (CPhA Format)</h2>
+<table>
+  <tr>
+    <th style="width:5%;">#</th>
+    <th style="width:25%;">Message</th>
+    <th style="width:12%;">Format</th>
+    <th style="width:12%;">Status</th>
+    <th style="width:46%;">Description</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Adjudicate Claim</td>
+    <td>CPhA</td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Submit a pharmacy claim for drug adjudication using CPhA standard format (Transaction Code 01).</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Totals &amp; Details</td>
+    <td>CPhA</td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Retrieve daily adjudication totals and claim detail records for reconciliation (Transaction Code 30).</td>
+  </tr>
+</table>
+
+<h2>9.2 eHealth &mdash; BC PharmaNet Messages</h2>
+<table>
+  <tr>
+    <th style="width:5%;">#</th>
+    <th style="width:22%;">Message</th>
+    <th style="width:10%;">Code</th>
+    <th style="width:8%;">HL7</th>
+    <th style="width:10%;">Mandatory</th>
+    <th style="width:10%;">Status</th>
+    <th style="width:35%;">Description</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Find Candidate</td>
+    <td>HCIM_IN_FindCandidates</td>
+    <td>v3</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Search PCR for patient candidates by name, DOB, gender, or PHN.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Get Demographics</td>
+    <td>HCIM_IN_GetDemographics</td>
+    <td>v3</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Retrieve complete demographic information for a patient from the PCR.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Patient Medication Profile</td>
+    <td>TRP</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Retrieve patient's full medication profile from PharmaNet (last 14 months).</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Retrieve Prescription</td>
+    <td>TRX X0</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Retrieve prescription details by ID, prescriber, status, or date.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Prescriber Identification</td>
+    <td>TIP</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Identify a prescriber by practitioner ID or name.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Record Prescription</td>
+    <td>TRX X1</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Record a new prescription on PharmaNet with drug, dosage, and prescriber details.</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>Profile Info Update</td>
+    <td>TPI</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Update patient profile: adverse reactions, clinical conditions, discontinue dispense, or comments.</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>Update Rx Status</td>
+    <td>TRX X2</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Update the status of an existing prescription (cancel, suspend).</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>Adjust/Adapt Rx</td>
+    <td>TRX X3</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Record a pharmacist adaptation with rationale, patient consent, and follow-up plan.</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>Location Details</td>
+    <td>TIL</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Retrieve details for a PharmaNet-registered location (pharmacy, clinic).</td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td>Dispense Event</td>
+    <td>TAC/TDU 01/04</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Submit a dispense claim to PharmaNet for adjudication with drug utilization evaluation.</td>
+  </tr>
+  <tr>
+    <td>12</td>
+    <td>Claim Reversal</td>
+    <td>TAC/TDU 11</td>
+    <td>v2</td>
+    <td><span class="mandatory">Mandatory</span></td>
+    <td><span class="status-implemented">Implemented</span></td>
+    <td>Reverse a previously submitted dispense claim.</td>
+  </tr>
+</table>
+
+<div class="highlight-box">
+  <strong>Total Implemented:</strong> 14 messages (2 CPhA Adjudication + 12 eHealth PharmaNet)<br/>
+  <strong>All mandatory Pharmacy transactions are implemented in the client test application.</strong>
+</div>
+</div>
+
+<!-- ==================== 10. LEFT-OVER MESSAGES ==================== -->
+<div class="pagebreak">
+<h1>10. Remaining / Left-Over Messages</h1>
+<p>
+  The following PharmaNet messages from the Conformance Standards v3.7 have <strong>not yet been implemented</strong> in the client test application. These are either mandatory for specific access types (EMR, MDS) or optional transactions.
+</p>
+
+<h2>10.1 Mandatory Messages Not Yet in Client App</h2>
+<table>
+  <tr>
+    <th style="width:5%;">#</th>
+    <th style="width:28%;">Message</th>
+    <th style="width:10%;">Code</th>
+    <th style="width:8%;">HL7</th>
+    <th style="width:15%;">Access Type</th>
+    <th style="width:34%;">Notes</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Adjudication Reconciliation</td>
+    <td>TDT</td>
+    <td>v2</td>
+    <td>Pharmacy</td>
+    <td>Daily reconciliation of PharmaNet dispense transactions. Mandatory for Pharmacy access.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Patient Protective Word Maintenance</td>
+    <td>TCP</td>
+    <td>v2</td>
+    <td>Pharmacy</td>
+    <td>Set, change, or remove the patient's keyword/protective word on PharmaNet. Mandatory for Pharmacy access.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Patient Keyword/Protective Word Verification</td>
+    <td>TPA</td>
+    <td>v2</td>
+    <td>ALL</td>
+    <td>Verify patient's keyword before accessing their profile. Mandatory for all access types.</td>
+  </tr>
+</table>
+
+<h2>10.2 Optional Messages Not Yet in Client App</h2>
+<table>
+  <tr>
+    <th style="width:5%;">#</th>
+    <th style="width:28%;">Message</th>
+    <th style="width:10%;">Code</th>
+    <th style="width:8%;">HL7</th>
+    <th style="width:49%;">Description</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Drug Monograph</td>
+    <td>TDR</td>
+    <td>v2</td>
+    <td>Retrieve drug monograph information from PharmaNet.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>DIN/PIN Lookup</td>
+    <td>TID</td>
+    <td>v2</td>
+    <td>Look up drug identification number (DIN) or product identification number (PIN).</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Medication Dispense History</td>
+    <td>TDH</td>
+    <td>v2</td>
+    <td>Retrieve historical dispense records beyond the standard 14-month profile window.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Mailbox Messages</td>
+    <td>TMB</td>
+    <td>v2</td>
+    <td>Retrieve PharmaNet mailbox messages (notifications, alerts).</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>PharmaNet Error Code Lookup</td>
+    <td>TEG</td>
+    <td>v2</td>
+    <td>Retrieve description for PharmaNet error/rejection codes.</td>
+  </tr>
+</table>
+
+<div class="warning-box">
+  <strong>Note:</strong> The messages listed above are not yet available in the client test application UI. The downstream services (Data Service and Enrichment Service) may or may not have the routing and HL7 builder logic for these messages. Adding them to the client application involves creating the controller endpoint, HTML template, and adding the button to the landing page &mdash; following the same pattern as the existing 12 eHealth messages.
+</div>
+</div>
+
+<!-- ==================== 11. APPENDIX ==================== -->
+<div class="pagebreak">
+<h1>11. Appendix: Deployment &amp; Configuration</h1>
+
+<h2>11.1 Cloud Run Services</h2>
+<table>
+  <tr>
+    <th>Service</th>
+    <th>Region</th>
+    <th>Min Instances</th>
+    <th>CPU Allocation</th>
+  </tr>
+  <tr>
+    <td>solis-dis-dataservice</td>
+    <td>northamerica-northeast1</td>
+    <td>0</td>
+    <td>Default (throttled when idle)</td>
+  </tr>
+  <tr>
+    <td>solis-dis-enrichmentservice</td>
+    <td>northamerica-northeast1</td>
+    <td>1 (warm instance)</td>
+    <td>--no-cpu-throttling (always-on for Pub/Sub processing)</td>
+  </tr>
+</table>
+
+<h2>11.2 Environment Variables</h2>
+<table>
+  <tr><th>Variable</th><th>Service</th><th>Purpose</th></tr>
+  <tr><td><code>ADJUDICATE_SERVICE_URL</code></td><td>Client Service</td><td>URL of the Data Service adjudication endpoint</td></tr>
+  <tr><td><code>DIS_BC_HL7_EVENT_URL</code></td><td>Client Service</td><td>URL of the Data Service HL7 event endpoint</td></tr>
+  <tr><td><code>TOTALS_SERVICE_URL</code></td><td>Client Service</td><td>URL of the Data Service totals endpoint</td></tr>
+  <tr><td><code>timeout.seconds</code></td><td>Enrichment Service</td><td>Pub/Sub message processing timeout (120s)</td></tr>
+</table>
+
+<h2>11.3 Spring Profiles</h2>
+<table>
+  <tr><th>Profile</th><th>Purpose</th></tr>
+  <tr><td><code>default</code></td><td>Local development &mdash; points to <code>localhost:8080</code></td></tr>
+  <tr><td><code>cloud</code></td><td>Cloud deployment &mdash; points to Cloud Run URLs in <code>application-cloud.properties</code></td></tr>
+</table>
+
+<h2>11.4 GCP Project</h2>
+<table>
+  <tr><th>Attribute</th><th>Value</th></tr>
+  <tr><td>Project ID</td><td>phcy-ga-dev</td></tr>
+  <tr><td>Region</td><td>northamerica-northeast1 (Montreal)</td></tr>
+  <tr><td>Pub/Sub Topics</td><td>DIS topic for eHealth messages; ADJ topic for CPhA messages</td></tr>
+  <tr><td>Firestore Database</td><td>Native mode, same project</td></tr>
+</table>
+
+<br/><br/>
+<p style="text-align: center; color: #95a5a6; font-size: 10pt; border-top: 1px solid #bdc3c7; padding-top: 15px;">
+  &mdash; End of Document &mdash;<br/>
+  Solis DIS Architecture &amp; Implementation Report &bull; April 2026 &bull; Confidential
+</p>
+</div>
+
+</body>
+</html>
