@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CPhA Submission Portal</title>
+  <title>Solis DIS Integration Test Client</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -10,295 +10,130 @@
       background-color: #f4f8fc;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
-      padding: 30px 20px;
+      padding: 40px 20px;
     }
 
-    .card {
-      padding: 25px;
+    .card-link {
+      display: block;
+      padding: 30px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
       border-radius: 15px;
       background-color: #ffffff;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .btn-orange {
-      background-color: #e67e22;
-      color: white;
-      border: none;
-      transition: background-color 0.3s ease;
+    .card-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+      color: inherit;
     }
 
-    .btn-orange:hover {
-      background-color: #d35400;
-      color: white;
+    .card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
     }
 
-    h2 {
-      font-weight: 600;
-      color: #34495e;
-    }
-
-    .section-title {
-      margin-bottom: 20px;
+    .card-title {
       font-size: 1.3rem;
-      font-weight: 500;
+      font-weight: 600;
       color: #2c3e50;
+      margin-bottom: 8px;
     }
 
-    .msg-row {
+    .card-desc {
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .province-grid {
       display: flex;
-      align-items: center;
       gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .msg-row:last-child {
-      border-bottom: none;
-    }
-
-    .msg-btn {
-      min-width: 200px;
-      flex-shrink: 0;
-    }
-
-    .msg-desc {
-      font-size: 0.85rem;
-      color: #555;
-      line-height: 1.4;
-    }
-
-    .badge-mandatory {
-      background-color: #e74c3c;
-      color: white;
-      font-size: 0.7rem;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .badge-optional {
-      background-color: #95a5a6;
-      color: white;
-      font-size: 0.7rem;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .badge-hl7v2 {
-      background-color: #2980b9;
-      color: white;
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: 600;
-    }
-
-    .badge-hl7v3 {
-      background-color: #8e44ad;
-      color: white;
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: 600;
-    }
-
-    .badge-cpha {
-      background-color: #27ae60;
-      color: white;
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: 600;
-    }
-
-    .badges {
-      display: flex;
-      gap: 5px;
       flex-wrap: wrap;
-      margin-bottom: 3px;
+      margin-top: 15px;
+    }
+
+    .province-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+      color: white;
+      transition: opacity 0.15s ease;
+    }
+
+    .province-btn:hover {
+      opacity: 0.85;
+      color: white;
+    }
+
+    .province-btn.active {
+      background-color: #2980b9;
+    }
+
+    .province-btn.coming-soon {
+      background-color: #bdc3c7;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .badge-count {
+      background-color: rgba(255,255,255,0.3);
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      margin-left: 6px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2 class="text-center mb-2">Adjudication &amp; eHealth Events Demo</h2>
-    <p class="text-center text-muted mb-4" style="font-size: 0.9rem;">
-      PharmaNet Conformance Standards v3.7 &mdash; Solis DIS Integration Test Client
+  <div class="container" style="max-width: 800px;">
+    <h2 class="text-center mb-2" style="font-weight: 700; color: #34495e;">Solis DIS Integration Test Client</h2>
+    <p class="text-center text-muted mb-5" style="font-size: 0.9rem;">
+      PharmaNet Conformance Standards v3.7 &mdash; Adjudication &amp; eHealth Events
     </p>
 
     <div class="row g-4">
 
-      <!-- Adjudication Column -->
-      <div class="col-lg-5">
-        <div class="card h-100">
-          <div class="section-title">Adjudication (CPhA)</div>
-
-          <div class="msg-row">
-            <a href="/jsononly" class="btn btn-orange msg-btn">Adjudicate Claim</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-cpha">CPhA</span>
-              </div>
-              Submit a pharmacy claim for adjudication using the CPhA Pharmacy Claim Standard format.
-            </div>
+      <!-- Adjudication -->
+      <div class="col-md-6">
+        <a href="/adjudication" class="card-link h-100">
+          <div class="card-icon">&#128203;</div>
+          <div class="card-title">Adjudication (CPhA)</div>
+          <div class="card-desc">
+            Submit pharmacy claims for adjudication and retrieve daily totals using the CPhA Pharmacy Claim Standard format.
           </div>
+          <div style="margin-top: 12px;">
+            <span style="background-color: #27ae60; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">2 Messages</span>
+          </div>
+        </a>
+      </div>
 
-          <div class="msg-row">
-            <a href="/total-and-details" class="btn btn-orange msg-btn">Totals &amp; Details</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-cpha">CPhA</span>
-              </div>
-              Retrieve daily adjudication totals and claim detail records for reconciliation.
-            </div>
+      <!-- eHealth -->
+      <div class="col-md-6">
+        <div class="card-link h-100" style="cursor: default;">
+          <div class="card-icon">&#127973;</div>
+          <div class="card-title">eHealth &mdash; Provincial DIS</div>
+          <div class="card-desc">
+            Provincial Drug Information System integration for patient lookup, prescriptions, dispense events, and more.
+          </div>
+          <div class="province-grid">
+            <a href="/ehealth-bc" class="province-btn active">
+              BC PharmaNet <span class="badge-count">19</span>
+            </a>
+            <span class="province-btn coming-soon">
+              AB &mdash; Coming Soon
+            </span>
+            <span class="province-btn coming-soon">
+              NS &mdash; Coming Soon
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- eHealth Column -->
-      <div class="col-lg-7">
-        <div class="card h-100">
-          <div class="section-title">eHealth &mdash; BC PharmaNet</div>
-
-          <!-- PCR / HL7 v3 -->
-          <div class="msg-row">
-            <a href="/bc-find-candidate" class="btn btn-orange msg-btn">Find Candidate</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v3">HL7 v3</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Search the Provincial Client Registry (PCR) for patient candidates by name, DOB, gender, or PHN.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-get-demographics" class="btn btn-orange msg-btn">Get Demographics</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v3">HL7 v3</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Retrieve complete demographic information for a patient from the PCR by PHN.
-            </div>
-          </div>
-
-          <!-- PharmaNet v2 Mandatory -->
-          <div class="msg-row">
-            <a href="/bc-patient-profile" class="btn btn-orange msg-btn">Patient Profile (TRP)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Retrieve the patient's full medication profile from PharmaNet (last 14 months).
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-retrieve-rx" class="btn btn-orange msg-btn">Retrieve Rx (TRX X0)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Retrieve prescription details from PharmaNet by prescription ID, prescriber, status, or date. e-Prescribing (v70) transaction.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-prescriber-id" class="btn btn-orange msg-btn">Prescriber ID (TIP)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Identify a prescriber by practitioner ID or name. Returns address, phone, and registration details.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-record-rx" class="btn btn-orange msg-btn">Record Rx (TRX X1)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Record a new prescription on PharmaNet. e-Prescribing (v70) transaction with full drug, dosage, and prescriber details.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-profile-info-update" class="btn btn-orange msg-btn">Profile Info Update (TPI)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Update patient profile on PharmaNet: adverse reactions, clinical conditions, discontinue dispense, or add comments.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-update-rx-status" class="btn btn-orange msg-btn">Update Rx Status (TRX X2)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Update the status of an existing prescription on PharmaNet (cancel, suspend). e-Prescribing (v70) transaction.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-adjust-rx" class="btn btn-orange msg-btn">Adjust/Adapt Rx (TRX X3)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Record a pharmacist adaptation of a prescription with rationale, patient consent, and follow-up plan.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-location-details" class="btn btn-orange msg-btn">Location Details (TIL)</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Retrieve details for a PharmaNet-registered location (pharmacy, clinic). e-Prescribing (v70) transaction.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-dispense-event" class="btn btn-orange msg-btn">Dispense Event</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Submit a dispense claim (TAC/TDU 01/04) to PharmaNet for adjudication. Includes drug utilization evaluation.
-            </div>
-          </div>
-
-          <div class="msg-row">
-            <a href="/bc-claim-reversal" class="btn btn-orange msg-btn">Claim Reversal</a>
-            <div class="msg-desc">
-              <div class="badges">
-                <span class="badge-hl7v2">HL7 v2</span>
-                <span class="badge-mandatory">Mandatory</span>
-              </div>
-              Reverse a previously submitted dispense claim (TAC/TDU 11). Must reference the original transaction.
-            </div>
-          </div>
-
-        </div>
-      </div>
     </div>
   </div>
 </body>

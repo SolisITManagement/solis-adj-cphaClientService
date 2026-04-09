@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>BC PharmaNet – Message Lifecycle</title></head>
+<body>
+
+<h1>BC PharmaNet &ndash; End-to-End Message Lifecycle</h1>
+<p><em>Last updated: April 2026</em></p>
+
+<hr/>
+
+<h2>1. Architecture Overview</h2>
+
+<p>The BC PharmaNet integration platform processes healthcare messages through a three-tier, event-driven architecture running on <strong>Google Cloud Platform (GCP)</strong>. Each message flows through the following layers:</p>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Layer</th>
+  <th>Service</th>
+  <th>Role</th>
+  <th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Client System</strong></td>
+  <td>CPHA Client Application</td>
+  <td>Web-based testing UI that submits healthcare messages and displays responses</td>
+  <td>Spring Boot 3.2, Java 21, Thymeleaf, WebClient</td>
+</tr>
+<tr>
+  <td><strong>Orchestration Layer</strong></td>
+  <td>Data Service</td>
+  <td>Receives requests, persists to Firestore, publishes to Pub/Sub, and polls for responses</td>
+  <td>Spring Boot 3.2, Java 21, Firestore, Pub/Sub Publisher</td>
+</tr>
+<tr>
+  <td><strong>Message Processing Engine</strong></td>
+  <td>Enrichment Service</td>
+  <td>Builds HL7 messages from JSON, sends to PharmaNet, saves responses to Firestore</td>
+  <td>Spring Boot 3.2, Java 21, Firestore, Pub/Sub Push</td>
+</tr>
+</tbody>
+</table>
+
+<h3>GCP Infrastructure</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#34495e; color:white;">
+<tr>
+  <th>Component</th>
+  <th>GCP Service</th>
+  <th>Resource Name</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Compute</td><td>Cloud Run</td><td><code>solis-dis-dataservice</code>, <code>solis-dis-enrichmentservice</code></td></tr>
+<tr><td>Messaging</td><td>Pub/Sub Topic</td><td><code>dis-bc-request</code></td></tr>
+<tr><td>Messaging</td><td>Pub/Sub Subscription</td><td><code>dis-bc-request-sub</code> (Push)</td></tr>
+<tr><td>Database</td><td>Firestore</td><td>Collections: <code>dis-bc-inbound-requests</code>, <code>dis-bc-responses</code></td></tr>
+<tr><td>Project</td><td>GCP Project</td><td><code>solis-public</code></td></tr>
+<tr><td>Region</td><td>&ndash;</td><td><code>northamerica-northeast1</code> (Montr&eacute;al)</td></tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>2. Message Lifecycle &ndash; Step by Step</h2>
+
+<p>The following diagram describes the full lifecycle of a single message from submission to response:</p>
+
+<pre style="background-color:#f5f5f5; padding:20px; border:1px solid #ddd; font-family:monospace; font-size:13px; line-height:1.6; overflow-x:auto;">
+
+  CLIENT SYSTEM                  ORCHESTRATION LAYER              GCP PUB/SUB             MESSAGE PROCESSING ENGINE
+  (CPHA Client App)              (Data Service)                                           (Enrichment Service)
+  ─────────────────              ──────────────────               ───────────             ─────────────────────────
+
+  ┌─────────────────┐
+  │ 1. User submits │
+  │    message from │
+  │    web UI       │
+  └────────┬────────┘
+           │
+           │  POST /api/dis/bc/publish
+           │  (JSON payload with Header.messageId)
+           ▼
+                                 ┌──────────────────────┐
+                                 │ 2. Validate &amp; persist │
+                                 │    inbound request    │
+                                 │    to Firestore       │──────▶ Firestore: dis-bc-inbound-requests/{messageId}
+                                 └──────────┬───────────┘
+                                            │
+                                            │ 3. Publish message
+                                            │    to Pub/Sub topic
+                                            ▼
+                                                                  ┌──────────────────┐
+                                                                  │ Pub/Sub Topic:   │
+                                                                  │ dis-bc-request   │
+                                                                  │                  │
+                                                                  │ Attribute:       │
+                                                                  │ correlationId =  │
+                                                                  │ Header.messageId │
+                                                                  └────────┬─────────┘
+                                                                           │
+                                                                           │ 4. Push delivery
+                                                                           │    POST /api/pharmanet/push-handler
+                                                                           ▼
+                                                                                            ┌───────────────────────┐
+                                                                                            │ 5. Decode Pub/Sub     │
+                                                                                            │    envelope, extract  │
+                                                                                            │    JSON payload       │
+                                                                                            └──────────┬────────────┘
+                                                                                                       │
+                                                                                                       ▼
+                                                                                            ┌───────────────────────┐
+                                                                                            │ 6. Route by           │
+                                                                                            │    eventTypeCode      │
+                                                                                            │    to HL7 builder     │
+                                                                                            └──────────┬────────────┘
+                                                                                                       │
+                                                                                                       ▼
+                                                                                            ┌───────────────────────┐
+                                                                                            │ 7. Build HL7 message  │
+                                                                                            │    (v2 or v3)         │
+                                                                                            └──────────┬────────────┘
+                                                                                                       │
+                                                                                                       │ 8. Send to PharmaNet
+                                                                                                       │    (HTTP POST)
+                                                                                                       ▼
+                                                                                            ┌───────────────────────┐
+                                                                                            │     PharmaNet         │
+                                                                                            │   (BC Ministry)       │
+                                                                                            └──────────┬────────────┘
+                                                                                                       │
+                                                                                                       │ HL7 Response
+                                                                                                       ▼
+                                                                                            ┌───────────────────────┐
+                                                                                            │ 9. Save response to   │
+                                                                                            │    Firestore          │──▶ Firestore: dis-bc-responses/{messageId}
+                                                                                            └───────────────────────┘
+
+                                 ┌──────────────────────┐
+                                 │ 10. Poll Firestore    │◀─────────────────────────────────── Firestore: dis-bc-responses/{messageId}
+                                 │     for response doc  │
+                                 └──────────┬───────────┘
+                                            │
+           ┌────────────────────────────────┘
+           │  JSON response (HL7 request + response + metadata)
+           ▼
+  ┌─────────────────┐
+  │ 11. Display     │
+  │     response    │
+  │     in web UI   │
+  └─────────────────┘
+
+</pre>
+
+<hr/>
+
+<h2>3. Detailed Flow Description</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Step</th>
+  <th>Layer</th>
+  <th>Action</th>
+  <th>Technical Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>1</strong></td>
+  <td>Client System</td>
+  <td>User submits a message from the web UI</td>
+  <td>User enters Patient &amp; Prescription business data in a textarea, clicks Submit. <code>BCPharmaNetController</code> merges business data with infrastructure defaults (Header, Sender, Receiver, MSH, ZCA, ZCB, ZCC, etc.) via <code>BCPayloadBuilder.buildFullPayload()</code> to produce a complete JSON payload. A unique <code>messageId</code> is generated per request.</td>
+</tr>
+<tr>
+  <td><strong>2</strong></td>
+  <td>Orchestration Layer</td>
+  <td>Validate and persist inbound request</td>
+  <td><code>BCPublishController</code> receives the JSON at <code>POST /api/dis/bc/publish</code>. <code>PharmanetIngestionService</code> extracts <code>Header.messageId</code> and persists the full payload to Firestore collection <strong><code>dis-bc-inbound-requests</code></strong> with the <code>messageId</code> as the document ID.</td>
+</tr>
+<tr>
+  <td><strong>3</strong></td>
+  <td>Orchestration Layer</td>
+  <td>Publish to Pub/Sub</td>
+  <td><code>PublisherService</code> publishes the JSON payload to Pub/Sub topic <strong><code>dis-bc-request</code></strong> with a <code>correlationMessageId</code> attribute set to <code>Header.messageId</code>.</td>
+</tr>
+<tr>
+  <td><strong>4</strong></td>
+  <td>GCP Pub/Sub</td>
+  <td>Push delivery to Enrichment Service</td>
+  <td>Pub/Sub subscription <strong><code>dis-bc-request-sub</code></strong> (push mode) delivers the message as an HTTP POST to the Enrichment Service endpoint <code>/api/pharmanet/push-handler</code> on Cloud Run.</td>
+</tr>
+<tr>
+  <td><strong>5</strong></td>
+  <td>Message Processing Engine</td>
+  <td>Decode Pub/Sub push envelope</td>
+  <td><code>PharmaNetMessageController</code> extracts the Base64-encoded <code>message.data</code> field, decodes to UTF-8 JSON, and checks TTL against <code>message.publishTime</code>. Stale messages are acknowledged without processing.</td>
+</tr>
+<tr>
+  <td><strong>6</strong></td>
+  <td>Message Processing Engine</td>
+  <td>Route to the correct HL7 builder</td>
+  <td><code>PharmanetEventService</code> reads <code>Event.eventTypeCode</code> and <code>Header.versionCode</code> from the JSON:
+    <ul>
+      <li>If <code>versionCode = V3PR1</code> &rarr; routes to <code>HL7V3MessageBuilder</code> (Find Candidate, Get Demographics)</li>
+      <li>Otherwise checks <code>pnetBuilderMap</code> (PharmaNet v2 transactions: TRP, TIP, TAC_TDU, etc.) then <code>adtBuilderMap</code> (ADT events: A01, DISPENSE, etc.)</li>
+    </ul>
+  </td>
+</tr>
+<tr>
+  <td><strong>7</strong></td>
+  <td>Message Processing Engine</td>
+  <td>Build HL7 message</td>
+  <td>The matched builder constructs the HL7 message (v2 pipe-delimited or v3 XML) from the JSON input. Each builder is specialized for its transaction type (e.g., <code>AdjudicateDispenseClaimBuilder</code>, <code>PatientProfileRequestBuilder</code>, <code>AdmitPatientMessageBuilder</code>).</td>
+</tr>
+<tr>
+  <td><strong>8</strong></td>
+  <td>Message Processing Engine</td>
+  <td>Send to PharmaNet</td>
+  <td><code>PharmaNetClientService</code> sends the HL7 message via HTTP POST to the PharmaNet endpoint. Content type is <code>application/hl7-v2</code> for v2 messages or <code>application/xml</code> for v3.</td>
+</tr>
+<tr>
+  <td><strong>9</strong></td>
+  <td>Message Processing Engine</td>
+  <td>Save response to Firestore</td>
+  <td><code>FirestoreService.saveResponse()</code> writes a document to Firestore collection <strong><code>dis-bc-responses</code></strong> with <code>messageId</code> as the document ID. The document contains: <code>messageId</code>, <code>eventTypeCode</code>, <code>hl7Request</code>, <code>hl7Response</code>, <code>jsonRequest</code>, <code>createdAt</code>, and <code>expireOn</code>.</td>
+</tr>
+<tr>
+  <td><strong>10</strong></td>
+  <td>Orchestration Layer</td>
+  <td>Poll Firestore for response</td>
+  <td><code>BCPublishController</code> polls Firestore collection <strong><code>dis-bc-responses</code></strong> using the <code>messageId</code> as the document ID. It retries at a configurable interval until the response document is found or the timeout is reached (504 Gateway Timeout).</td>
+</tr>
+<tr>
+  <td><strong>11</strong></td>
+  <td>Client System</td>
+  <td>Display response in web UI</td>
+  <td>The client receives the full response JSON (including the HL7 request built by services, the HL7 response from PharmaNet, and metadata). The UI displays: the HL7 Request, the HL7 Response, and the full database response document.</td>
+</tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>4. Correlation &amp; Traceability</h2>
+
+<p>Every message is correlated end-to-end using a single key: <strong><code>Header.messageId</code></strong></p>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Where</th>
+  <th>Field / Key</th>
+  <th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Client System</td><td><code>Header.messageId</code> (JSON)</td><td>20-character random alphanumeric string</td></tr>
+<tr><td>Firestore (inbound)</td><td>Document ID in <code>dis-bc-inbound-requests</code></td><td>Same <code>messageId</code></td></tr>
+<tr><td>Pub/Sub</td><td>Attribute: <code>correlationMessageId</code></td><td>Same <code>messageId</code></td></tr>
+<tr><td>Firestore (response)</td><td>Document ID in <code>dis-bc-responses</code></td><td>Same <code>messageId</code></td></tr>
+<tr><td>Data Service (polling)</td><td>Query key for response lookup</td><td>Same <code>messageId</code></td></tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>5. Firestore Collections</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Collection</th>
+  <th>Written By</th>
+  <th>Read By</th>
+  <th>Document ID</th>
+  <th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>dis-bc-inbound-requests</code></td>
+  <td>Orchestration Layer (Data Service)</td>
+  <td>&ndash;</td>
+  <td><code>Header.messageId</code></td>
+  <td>Archive of all inbound requests (JSON payload, timestamp, schema version)</td>
+</tr>
+<tr>
+  <td><code>dis-bc-responses</code></td>
+  <td>Message Processing Engine (Enrichment Service)</td>
+  <td>Orchestration Layer (Data Service)</td>
+  <td><code>Header.messageId</code></td>
+  <td>HL7 request, HL7 response, event type, timestamps, and expiration</td>
+</tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>6. Pub/Sub Configuration</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Resource</th>
+  <th>Name</th>
+  <th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Topic</td>
+  <td><code>dis-bc-request</code></td>
+  <td>Full path: <code>projects/solis-public/topics/dis-bc-request</code></td>
+</tr>
+<tr>
+  <td>Subscription</td>
+  <td><code>dis-bc-request-sub</code></td>
+  <td>Type: <strong>Push</strong><br/>
+  Endpoint: <code>https://solis-dis-enrichmentservice-&lt;id&gt;.northamerica-northeast1.run.app/api/pharmanet/push-handler</code><br/>
+  Ack deadline: 600s<br/>
+  Message retention: 7 days</td>
+</tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>7. Implemented Messages</h2>
+
+<h3>7.1 Mandatory PharmaNet Transactions (HL7 v2) &ndash; 12 Messages</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#c0392b; color:white;">
+<tr>
+  <th>Transaction Code</th>
+  <th>Message Name</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>TAC/TDU</code></td><td>Adjudicate Dispense Claim</td><td>Submit a dispense claim to PharmaNet for adjudication with drug utilization evaluation</td></tr>
+<tr><td><code>TAC/TDU 11</code></td><td>Claim Reversal</td><td>Reverse a previously submitted dispense claim</td></tr>
+<tr><td><code>TCP</code></td><td>Patient Keyword Maintenance</td><td>Maintain or update the patient keyword (protective word) on the PharmaNet record</td></tr>
+<tr><td><code>TDT</code></td><td>Adjudication Reconciliation</td><td>Reconciliation of adjudication transactions (codes 30/31/32/33)</td></tr>
+<tr><td><code>TIL</code></td><td>Get Location Details</td><td>Retrieve details for a PharmaNet-registered location (pharmacy, clinic)</td></tr>
+<tr><td><code>TIP</code></td><td>Prescriber Identification</td><td>Identify a prescriber by practitioner ID or name</td></tr>
+<tr><td><code>TPI</code></td><td>Patient Profile Info Update</td><td>Update patient profile: adverse reactions, clinical conditions, discontinue dispense</td></tr>
+<tr><td><code>TRP</code></td><td>Patient Profile Request</td><td>Retrieve the patient's full medication profile from PharmaNet (last 14 months)</td></tr>
+<tr><td><code>TRX X0</code></td><td>Retrieve Prescription</td><td>Retrieve prescription details by prescription ID, prescriber, status, or date</td></tr>
+<tr><td><code>TRX X1</code></td><td>Record Prescription</td><td>Record a new prescription on PharmaNet with drug, dosage, and prescriber details</td></tr>
+<tr><td><code>TRX X2</code></td><td>Update Prescription Status</td><td>Update the status of an existing prescription (cancel, suspend)</td></tr>
+<tr><td><code>TRX X3</code></td><td>Adjust/Adapt Prescription</td><td>Record a pharmacist adaptation with rationale, patient consent, and follow-up plan</td></tr>
+</tbody>
+</table>
+
+<h3>7.2 Optional PharmaNet Transactions (HL7 v2) &ndash; 5 Messages</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#95a5a6; color:white;">
+<tr>
+  <th>Transaction Code</th>
+  <th>Message Name</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>TMU 01</code></td><td>Medication Update</td><td>Update a patient's medication record in PharmaNet</td></tr>
+<tr><td><code>TMU 11</code></td><td>Medication Update Reversal</td><td>Reverse a previously submitted medication update</td></tr>
+<tr><td><code>TPA</code></td><td>Patient Address Update</td><td>Update the patient's address information in PharmaNet</td></tr>
+<tr><td><code>TPH</code></td><td>PHN Assignment / Lookup</td><td>Assignment or lookup of a PHN for patient identification</td></tr>
+<tr><td><code>TPN</code></td><td>Patient Name Search</td><td>Search for a patient by name when direct identifying details are unavailable</td></tr>
+</tbody>
+</table>
+
+<h3>7.3 HL7 v3 &ndash; Provincial Client Registry (PCR) &ndash; 2 Messages</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#27ae60; color:white;">
+<tr>
+  <th>Interaction ID</th>
+  <th>Message Name</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>HCIM_IN_FindCandidates</code></td><td>Find Candidates</td><td>Search the Provincial Client Registry for patient candidates by name, DOB, gender, or PHN</td></tr>
+<tr><td><code>HCIM_IN_GetDemographics</code></td><td>Get Demographics</td><td>Retrieve complete demographic information for a patient from the PCR by PHN</td></tr>
+</tbody>
+</table>
+
+<h3>7.4 ADT Events (HL7 v2) &ndash; Hospital Integration</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2980b9; color:white;">
+<tr>
+  <th>Event Code</th>
+  <th>Message Name</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>A01</code></td><td>Admit Patient</td><td>Admit patient to a healthcare facility</td></tr>
+<tr><td><code>A02</code></td><td>Transfer Patient</td><td>Transfer patient between units or locations</td></tr>
+<tr><td><code>A03</code></td><td>Discharge Patient</td><td>Discharge patient from a healthcare facility</td></tr>
+<tr><td><code>A08</code></td><td>Update Patient Info</td><td>Update patient demographics and insurance information</td></tr>
+<tr><td><code>A31</code></td><td>Demographic Update</td><td>Update person demographics in the registry</td></tr>
+<tr><td><code>DISPENSE</code></td><td>Dispense Event</td><td>Generic dispense event from JSON for hospital systems</td></tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>8. Key API Endpoints</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Service</th>
+  <th>Endpoint</th>
+  <th>Method</th>
+  <th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Orchestration Layer</td><td><code>/api/dis/bc/publish</code></td><td>POST</td><td>Receive BC PharmaNet message from Client System</td></tr>
+<tr><td>Orchestration Layer</td><td><code>/api/dis/response/bc/retry?messageId=</code></td><td>GET</td><td>Retry/fetch response by messageId</td></tr>
+<tr><td>Message Processing Engine</td><td><code>/api/pharmanet/push-handler</code></td><td>POST</td><td>Receive Pub/Sub push delivery</td></tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>9. Error Handling &amp; Resilience</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Scenario</th>
+  <th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Message Processing Engine is down</td>
+  <td>Pub/Sub retries push delivery with exponential backoff. Messages are retained for up to 7 days.</td>
+</tr>
+<tr>
+  <td>Stale message (TTL exceeded)</td>
+  <td>Message Processing Engine acknowledges (HTTP 204) without processing if <code>publishTime</code> exceeds the configured TTL (default 120s).</td>
+</tr>
+<tr>
+  <td>Unsupported event type</td>
+  <td>Message Processing Engine returns HTTP 500. Pub/Sub retries. Logged as <code>IllegalArgumentException</code>.</td>
+</tr>
+<tr>
+  <td>PharmaNet unreachable</td>
+  <td>HTTP timeout from <code>PharmaNetClientService</code>. Response not written to Firestore. Orchestration Layer returns 504 to Client System.</td>
+</tr>
+<tr>
+  <td>Response polling timeout</td>
+  <td>Orchestration Layer retries Firestore reads at a configurable interval. Returns HTTP 504 with <code>"Timed-out.. messageId not identified"</code> if max retries exhausted.</td>
+</tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>10. Technology Stack Summary</h2>
+
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead style="background-color:#2c3e50; color:white;">
+<tr>
+  <th>Category</th>
+  <th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Language</td><td>Java 21</td></tr>
+<tr><td>Framework</td><td>Spring Boot 3.2.5</td></tr>
+<tr><td>Build Tool</td><td>Apache Maven</td></tr>
+<tr><td>Template Engine</td><td>Thymeleaf (Client System only)</td></tr>
+<tr><td>HTTP Client</td><td>Spring WebFlux WebClient (Client &rarr; Orchestration), Java HttpClient (Processing Engine &rarr; PharmaNet)</td></tr>
+<tr><td>JSON Processing</td><td>Jackson (ObjectMapper, JsonNode)</td></tr>
+<tr><td>Messaging</td><td>Google Cloud Pub/Sub (Push subscription)</td></tr>
+<tr><td>Database</td><td>Google Cloud Firestore</td></tr>
+<tr><td>Compute</td><td>Google Cloud Run</td></tr>
+<tr><td>Container</td><td>Docker</td></tr>
+<tr><td>Health Standards</td><td>HL7 v2 (PharmaNet v3.7), HL7 v3 (HCIM PCR)</td></tr>
+</tbody>
+</table>
+
+</body>
+</html>

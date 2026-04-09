@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Adjudication (CPhA)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f4f8fc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    .card {
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-radius: 15px;
+      background-color: #ffffff;
+    }
+
+    .btn-orange {
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-orange:hover {
+      background-color: #d35400;
+      color: white;
+    }
+
+    .section-title {
+      margin-bottom: 20px;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: #2c3e50;
+    }
+
+    .msg-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .msg-row:last-child {
+      border-bottom: none;
+    }
+
+    .msg-btn {
+      min-width: 200px;
+      flex-shrink: 0;
+    }
+
+    .msg-desc {
+      font-size: 0.85rem;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .badge-cpha {
+      background-color: #27ae60;
+      color: white;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 800px;">
+    <div class="mb-3">
+      <a href="/" class="btn btn-orange btn-sm">&larr; Back to Home</a>
+    </div>
+
+    <h2 class="mb-4" style="font-weight: 700; color: #34495e;">Adjudication (CPhA)</h2>
+
+    <div class="card">
+      <div class="section-title">CPhA Pharmacy Claim Standard</div>
+
+      <div class="msg-row">
+        <a href="/jsononly" class="btn btn-orange msg-btn">Adjudicate Claim</a>
+        <div class="msg-desc">
+          <div class="badges">
+            <span class="badge-cpha">CPhA</span>
+          </div>
+          Submit a pharmacy claim for adjudication using the CPhA Pharmacy Claim Standard format.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/total-and-details" class="btn btn-orange msg-btn">Totals &amp; Details</a>
+        <div class="msg-desc">
+          <div class="badges">
+            <span class="badge-cpha">CPhA</span>
+          </div>
+          Retrieve daily adjudication totals and claim detail records for reconciliation.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>eHealth &mdash; BC PharmaNet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f4f8fc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    .card {
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-radius: 15px;
+      background-color: #ffffff;
+    }
+
+    .btn-orange {
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-orange:hover {
+      background-color: #d35400;
+      color: white;
+    }
+
+    .section-title {
+      margin-bottom: 4px;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .section-subtitle {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 15px;
+    }
+
+    .msg-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .msg-row:last-child {
+      border-bottom: none;
+    }
+
+    .msg-btn {
+      min-width: 280px;
+      flex-shrink: 0;
+    }
+
+    .msg-desc {
+      font-size: 0.85rem;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .badge-mandatory {
+      background-color: #e74c3c;
+      color: white;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-optional {
+      background-color: #95a5a6;
+      color: white;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-extra {
+      background-color: #2ecc71;
+      color: white;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-hl7v2 {
+      background-color: #2980b9;
+      color: white;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .badge-hl7v3 {
+      background-color: #8e44ad;
+      color: white;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 950px;">
+    <div class="mb-3">
+      <a href="/" class="btn btn-orange btn-sm">&larr; Back to Home</a>
+    </div>
+
+    <h2 class="mb-1" style="font-weight: 700; color: #34495e;">eHealth &mdash; BC PharmaNet</h2>
+    <p class="text-muted mb-4" style="font-size: 0.9rem;">
+      PharmaNet Conformance Standards v3.7 &mdash; 19 Messages (12 Mandatory, 5 Optional, 2 PCR)
+    </p>
+
+    <!-- ===================== MANDATORY TRANSACTIONS (12) ===================== -->
+    <div class="card mb-4" style="border-left: 4px solid #e74c3c;">
+      <div class="section-title" style="color: #c0392b;">Mandatory Transactions <span class="badge-mandatory" style="font-size: 0.75rem; vertical-align: middle;">12</span></div>
+      <div class="section-subtitle">Required for PharmaNet conformance &mdash; all implemented in enrichment service</div>
+
+      <div class="msg-row">
+        <a href="/bc-dispense-event" class="btn btn-orange msg-btn">Adjudicate Dispense Claim (TAC/TDU)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Submit a dispense claim (TAC/TDU 01/04) to PharmaNet for adjudication with drug utilization evaluation.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-claim-reversal" class="btn btn-orange msg-btn">Claim Reversal (TAC/TDU 11)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Reverse a previously submitted dispense claim. Must reference the original transaction.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-protective-word" class="btn btn-orange msg-btn">Patient Keyword Maintenance (TCP)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Maintain or update the patient keyword associated with the PharmaNet patient record.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-adj-reconciliation" class="btn btn-orange msg-btn">Adjudication Reconciliation (TDT)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Reconciliation of adjudication transactions (codes 30/31/32/33). Retrieves totals for balancing.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-location-details" class="btn btn-orange msg-btn">Get Location Details (TIL)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Retrieve details for a PharmaNet-registered location (pharmacy, clinic).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-prescriber-id" class="btn btn-orange msg-btn">Prescriber Identification (TIP)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Identify a prescriber by practitioner ID or name. Returns address, phone, and registration details.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-profile-info-update" class="btn btn-orange msg-btn">Patient Profile Info Update (TPI)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Update patient profile: adverse reactions, clinical conditions, discontinue dispense, or add comments.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-patient-profile" class="btn btn-orange msg-btn">Patient Profile Request (TRP)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Retrieve the patient's full medication profile from PharmaNet (last 14 months).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-retrieve-rx" class="btn btn-orange msg-btn">Retrieve Prescription (TRX X0)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Retrieve prescription details by prescription ID, prescriber, status, or date.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-record-rx" class="btn btn-orange msg-btn">Record Prescription (TRX X1)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Record a new prescription on PharmaNet with full drug, dosage, and prescriber details.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-update-rx-status" class="btn btn-orange msg-btn">Update Prescription Status (TRX X2)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Update the status of an existing prescription (cancel, suspend).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-adjust-rx" class="btn btn-orange msg-btn">Adjust/Adapt Prescription (TRX X3)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Record a pharmacist adaptation with rationale, patient consent, and follow-up plan.
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== OPTIONAL TRANSACTIONS (5 implemented) ===================== -->
+    <div class="card mb-4" style="border-left: 4px solid #95a5a6;">
+      <div class="section-title" style="color: #7f8c8d;">Optional Transactions <span class="badge-optional" style="font-size: 0.75rem; vertical-align: middle;">5</span></div>
+      <div class="section-subtitle">Specialized workflows &mdash; 5 of 12 optional transactions implemented</div>
+
+      <div class="msg-row">
+        <a href="/bc-medication-update" class="btn btn-orange msg-btn">Medication Update (TMU 01)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Update a patient's medication record in PharmaNet.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-medication-update-reversal" class="btn btn-orange msg-btn">Medication Update Reversal (TMU 11)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Reverse a previously submitted medication update.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-keyword-verify" class="btn btn-orange msg-btn">Patient Address Update (TPA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Update the patient's address information in PharmaNet.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-phn-assignment" class="btn btn-orange msg-btn">PHN Assignment / Lookup (TPH)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Supports assignment or lookup of a PHN for patient identification workflows.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-patient-name-search" class="btn btn-orange msg-btn">Patient Name Search (TPN)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v2">HL7 v2</span></div>
+          Search for a patient by name when direct identifying details are incomplete or unavailable.
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== EXTRA / HL7 v3 HCIM (2) ===================== -->
+    <div class="card mb-4" style="border-left: 4px solid #2ecc71;">
+      <div class="section-title" style="color: #27ae60;">HL7 v3 &mdash; Provincial Client Registry (PCR) <span class="badge-extra" style="font-size: 0.75rem; vertical-align: middle;">2</span></div>
+      <div class="section-subtitle">BC HCIM Client Registry &mdash; patient demographic lookups via HL7 v3</div>
+
+      <div class="msg-row">
+        <a href="/bc-find-candidate" class="btn btn-orange msg-btn">Find Candidates (HCIM)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v3">HL7 v3</span></div>
+          Search the Provincial Client Registry for patient candidates by name, DOB, gender, or PHN.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/bc-get-demographics" class="btn btn-orange msg-btn">Get Demographics (HCIM)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-hl7v3">HL7 v3</span></div>
+          Retrieve complete demographic information for a patient from the PCR by PHN.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
