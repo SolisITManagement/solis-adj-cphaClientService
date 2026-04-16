@@ -1,0 +1,210 @@
+BC PharmaNet / Careverse - Questionnaire Answer Validation
+============================================================
+Validated against actual codebase and deployed architecture
+April 2026
+
+
+VALIDATION SUMMARY
+==================
+
+| #  | Question                      | Verdict              | Issue                                           |
+|----|-------------------------------|----------------------|-------------------------------------------------|
+| 17 | Software systems              | Needs specifics      | Name Cloud Run, Firestore, Pub/Sub, Angular     |
+| 18 | Network infrastructure        | Aspirational         | No VPC/WAF/LB currently configured              |
+| 19 | Cloud hosting                 | Accurate             | Toronto is optional, not active                  |
+| 20 | Data centres                  | Accurate             | -                                                |
+| 21 | Location                      | Accurate             | -                                                |
+| 22 | Owned/subcontracted           | Accurate             | -                                                |
+| 23 | Provider name                 | Accurate             | -                                                |
+| 24 | Shared/dedicated              | Mostly accurate      | Remove sole-tenant reference for Cloud Run       |
+| 25 | Remote operations             | Accurate             | -                                                |
+| 26 | Audited/certified             | Accurate             | -                                                |
+| 27 | Data isolation                | OVERSTATED           | No RBAC, no auth, no tenant isolation exists     |
+| 28 | Power redundancy              | Accurate             | -                                                |
+| 29 | Backup/recovery               | Partially aspirational| No backups configured yet                       |
+| 30 | Partner compliance            | Accurate             | -                                                |
+
+
+DETAILED FINDINGS
+=================
+
+17. Software systems for application hosting
+---------------------------------------------
+Verdict: NEEDS SPECIFICS
+
+The answer is directionally correct but vague. Based on the actual stack:
+
+  - Careverse (Client): Angular, TypeScript
+  - Backend Microservices: Spring Boot 3.2.5, Java 21, Apache Maven
+  - Compute: Google Cloud Run (serverless containers, NOT GKE)
+  - Database: Google Cloud Firestore (NoSQL, NOT Cloud SQL/PostgreSQL)
+  - Messaging: Google Cloud Pub/Sub (push subscriptions)
+  - Container Registry: GCP Artifact Registry
+  - Build: Google Cloud Build
+  - Web Server: Embedded Apache Tomcat (within Spring Boot)
+  - Monitoring: Cloud Logging (stdout), but no custom dashboards or alerting yet
+
+Recommendation: Name Cloud Run, Firestore, Pub/Sub, and Artifact Registry
+explicitly rather than keeping it generic.
+
+
+18. Network infrastructure and capabilities
+--------------------------------------------
+Verdict: ASPIRATIONAL (not current state)
+
+The answer mentions VPC, managed firewalls, load balancing, and DDoS
+protection. Based on the codebase:
+
+  - There is NO VPC configured -- Cloud Run services use default settings
+  - There is NO Cloud Armor/WAF configured
+  - There is NO explicit load balancer -- Cloud Run provides built-in
+    request routing but no Global LB
+  - DDoS protection is implicit via Cloud Run (accurate)
+
+Recommendation: This answer describes the planned/target state (Phase 2
+of the security plan), not the current state. If the questionnaire asks
+about current state, qualify with "will be" language.
+
+
+19. Cloud hosting solution
+---------------------------
+Verdict: ACCURATE
+
+Montreal (northamerica-northeast1) is the primary region. Toronto as
+secondary is correctly described as an option. GCP certifications listed
+are all correct.
+
+Note: Current deployment is single-region (Montreal only). Toronto is not
+yet configured. The phrase "with the option to leverage" is fair.
+
+
+20. How many data centres
+--------------------------
+Verdict: ACCURATE
+
+Single primary (Montreal), Toronto available as secondary. Correctly framed.
+
+
+21. Where are they located
+---------------------------
+Verdict: ACCURATE
+
+Montreal and Toronto, all within Canada. Correct.
+
+
+22. Data centre owned or subcontracted
+---------------------------------------
+Verdict: ACCURATE
+
+GCP owns and operates the data centres. Careverse uses them as a cloud
+customer. Correct.
+
+
+23. Provider name
+------------------
+Verdict: ACCURATE
+
+Google Cloud Platform (Google LLC). Correct.
+
+
+24. Shared or dedicated servers
+--------------------------------
+Verdict: MOSTLY ACCURATE
+
+  - Cloud Run is shared/multi-tenant serverless infrastructure -- there
+    is NO "dedicated compute resource" option for Cloud Run
+  - Firestore and Pub/Sub are also shared managed services
+  - The mention of "sole-tenant options" is technically correct for
+    GCE/GKE but NOT applicable to Cloud Run
+
+Recommendation: Remove the sole-tenant reference unless you plan to
+migrate to GKE. Instead, emphasize that workloads run in isolated
+containers with GCP's built-in security boundaries (gVisor sandboxing
+on Cloud Run).
+
+
+25. Remote operations
+----------------------
+Verdict: ACCURATE
+
+All operations are remote via gcloud CLI, Cloud Console, and deploy.sh
+scripts. Google handles physical operations. Correct.
+
+
+26. Data centres audited/certified
+------------------------------------
+Verdict: ACCURATE
+
+All certifications listed (ISO 27001, 27017, 27018, SOC 1/2/3, PCI DSS,
+CSA STAR, NIST 800-53) are correct for GCP. No changes needed.
+
+
+27. Customer data isolation
+----------------------------
+Verdict: OVERSTATED (most problematic answer)
+
+The answer claims capabilities that DO NOT exist in the current codebase:
+
+  - "Role-based access controls (RBAC)" -- NO RBAC implemented. No Spring
+    Security, no authentication, no authorization on any endpoint.
+  - "Tenant-level isolation" -- NO multi-tenant isolation. Single GCP
+    project, single Firestore collections, no tenant partitioning.
+  - "VPC segmentation and IAM policies" -- NOT configured in the current
+    deployment.
+  - "All access is logged and auditable" -- NO audit logging exists.
+
+Recommendation: This is the most problematic answer. Either:
+  1. Reword as planned/target state: "Careverse WILL BE designed with..."
+  2. Implement Phase 1 (auth/RBAC) and Phase 2 (audit logging) of the
+     security hardening plan first, then use this answer as-is
+
+
+28. Power redundancy
+---------------------
+Verdict: ACCURATE
+
+Entirely a GCP infrastructure answer. N+1 redundant power, UPS, backup
+generators. Correct.
+
+
+29. Backup and recovery
+------------------------
+Verdict: PARTIALLY ASPIRATIONAL
+
+  - "Automated database backups" -- NO automated Firestore backups
+    are configured
+  - "Point-in-time recovery" -- NOT configured for Firestore
+  - "Cross-region replication" -- NOT configured (single region only)
+  - "Recovery procedures will be fully documented" -- the phrase "will be"
+    is honest and appropriate
+
+Recommendation: The last sentence correctly uses future tense. The first
+part should say "Our backup strategy WILL leverage" instead of
+"leverages" unless you implement Phase 3.1 (Firestore backups) first.
+
+
+30. Partner compliance
+-----------------------
+Verdict: ACCURATE
+
+GCP's certifications and healthcare track record are correctly cited.
+No changes needed.
+
+
+KEY ACTIONS REQUIRED
+====================
+
+1. CRITICAL: Fix answer #27 (data isolation) -- either reword as target
+   state or implement auth/RBAC first. This answer describes capabilities
+   that do not exist.
+
+2. HIGH: Fix answer #29 (backup/recovery) -- change "leverages" to
+   "will leverage" for automated backups and cross-region replication.
+
+3. MEDIUM: Fix answer #18 (network) -- qualify as target state or
+   implement VPC/WAF first.
+
+4. LOW: Update answer #17 with specific technology names (Cloud Run,
+   Firestore, Pub/Sub, Angular).
+
+5. LOW: Fix answer #24 -- remove sole-tenant reference for Cloud Run.

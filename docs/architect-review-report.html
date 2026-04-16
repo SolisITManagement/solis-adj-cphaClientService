@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solis DIS - Principal Architect Review &amp; Architecture Overview</title>
+<style>
+  :root {
+    --primary: #1a365d;
+    --primary-light: #2b6cb0;
+    --accent: #e53e3e;
+    --warning: #dd6b20;
+    --success: #38a169;
+    --info: #3182ce;
+    --bg: #f7fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --text: #2d3748;
+    --text-light: #718096;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .page-break { page-break-before: always; }
+
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 48px 40px;
+  }
+  header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  header .subtitle { font-size: 18px; opacity: 0.9; margin-bottom: 4px; }
+  header .meta { font-size: 13px; opacity: 0.7; margin-top: 12px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 40px; }
+
+  .toc {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+  }
+  .toc h2 { font-size: 20px; color: var(--primary); margin-bottom: 16px; border: none; padding: 0; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--primary-light); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  h2 {
+    font-size: 24px;
+    color: var(--primary);
+    margin-top: 48px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary);
+  }
+  h3 {
+    font-size: 18px;
+    color: var(--primary);
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  p { margin-bottom: 12px; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card-number {
+    background: var(--primary);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--primary); }
+
+  .question-box {
+    background: #ebf4ff;
+    border-left: 4px solid var(--info);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-style: italic;
+    border-radius: 0 4px 4px 0;
+  }
+  .answer-box {
+    background: #f0fff4;
+    border-left: 4px solid var(--success);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .answer-box strong { color: var(--success); }
+  .gap-box {
+    background: #fff5f5;
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .gap-box strong { color: var(--accent); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-critical { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+  .badge-high { background: #fffaf0; color: #c05621; border: 1px solid #fbd38d; }
+  .badge-medium { background: #fffff0; color: #975a16; border: 1px solid #fefcbf; }
+  .badge-low { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .badge-ok { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--primary);
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:nth-child(even) { background: #f7fafc; }
+
+  .diagram-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+
+  .svg-diagram { width: 100%; height: auto; }
+
+  .tech-stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .tech-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .tech-item .label { font-size: 12px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+  .tech-item .value { font-size: 15px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .summary-stat {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .summary-stat .number { font-size: 36px; font-weight: 700; color: var(--primary); }
+  .summary-stat .label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .flow-num {
+    background: var(--primary-light);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  @media print {
+    header { padding: 24px; }
+    .container { padding: 16px; }
+    .card { break-inside: avoid; }
+  }
+
+  @media (max-width: 768px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Solis DIS Platform</h1>
+  <div class="subtitle">Principal Architect Review: Compliance, Cybersecurity &amp; Regulatory Assessment</div>
+  <div class="subtitle">BC PharmaNet HL7 Messaging Platform &mdash; Full Architecture Overview</div>
+  <div class="meta">Prepared: April 2026 &nbsp;|&nbsp; Classification: CONFIDENTIAL &nbsp;|&nbsp; Solis / Careverse Engineering</div>
+</header>
+
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#exec-summary">Executive Summary</a></li>
+    <li><a href="#arch-diagram">Full Architecture Diagram</a></li>
+    <li><a href="#tech-stack">Technology Stack</a></li>
+    <li><a href="#data-flow">End-to-End Data Flow</a></li>
+    <li><a href="#service-inventory">Service Inventory</a></li>
+    <li><a href="#hl7-coverage">HL7 Message Coverage</a></li>
+    <li><a href="#cat1">Category 1: Data Sovereignty &amp; Jurisdictional Compliance (Q1&ndash;Q5)</a></li>
+    <li><a href="#cat2">Category 2: Authentication, Authorization &amp; Identity (Q6&ndash;Q10)</a></li>
+    <li><a href="#cat3">Category 3: Threat Modeling &amp; Attack Surface (Q11&ndash;Q14)</a></li>
+    <li><a href="#cat4">Category 4: Data Protection &amp; PHI Handling (Q15&ndash;Q19)</a></li>
+    <li><a href="#cat5">Category 5: Resilience, Availability &amp; Operational Readiness (Q20&ndash;Q24)</a></li>
+    <li><a href="#cat6">Category 6: Supply Chain &amp; Dependency Security (Q25&ndash;Q28)</a></li>
+    <li><a href="#cat7">Category 7: Regulatory &amp; Compliance Specifics (Q29&ndash;Q34)</a></li>
+    <li><a href="#cat8">Category 8: Architecture Patterns &amp; Design (Q35&ndash;Q39)</a></li>
+    <li><a href="#verdict">Architect&rsquo;s Verdict &amp; Risk Summary</a></li>
+    <li><a href="#roadmap">Remediation Roadmap</a></li>
+  </ol>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<h2 id="exec-summary">1. Executive Summary</h2>
+
+<div class="summary-grid">
+  <div class="summary-stat">
+    <div class="number">3</div>
+    <div class="label">Microservices</div>
+  </div>
+  <div class="summary-stat">
+    <div class="number">32</div>
+    <div class="label">HL7 Message Types</div>
+  </div>
+  <div class="summary-stat">
+    <div class="number">65+</div>
+    <div class="label">HL7 Builder Classes</div>
+  </div>
+  <div class="summary-stat">
+    <div class="number">39</div>
+    <div class="label">Architect Questions</div>
+  </div>
+</div>
+
+<p>The <strong>Solis DIS (Drug Information System)</strong> platform is a cloud-native microservices architecture designed to facilitate HL7 messaging between Canadian healthcare providers and the BC PharmaNet system. It processes pharmacy transactions (dispensing claims, patient lookups, prescription management) by transforming simplified business JSON into standards-compliant HL7 v2 and v3 messages.</p>
+
+<p>The system is deployed on <strong>Google Cloud Platform</strong> in the <strong>Montreal (northamerica-northeast1)</strong> region, using <strong>Cloud Run</strong> for compute, <strong>Firestore</strong> for persistence, and <strong>Pub/Sub</strong> for asynchronous inter-service messaging.</p>
+
+<p>This document presents <strong>39 questions</strong> a senior principal architect would ask during a compliance, cybersecurity, and regulatory review, along with <strong>suggested answers</strong> that reflect both the current state and the planned target state after the 27-day security hardening roadmap.</p>
+
+<!-- ARCHITECTURE DIAGRAM -->
+<h2 id="arch-diagram">2. Full Architecture Diagram</h2>
+
+<div class="diagram-container">
+<svg viewBox="0 0 1040 920" class="svg-diagram" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+
+  <!-- Background regions -->
+  <!-- Client Zone -->
+  <rect x="20" y="20" width="1000" height="130" rx="10" fill="#ebf4ff" stroke="#90cdf4" stroke-width="1.5"/>
+  <text x="36" y="44" font-size="13" font-weight="600" fill="#2b6cb0">CLIENT SYSTEM (Layer 1)</text>
+
+  <!-- Orchestration Zone -->
+  <rect x="20" y="170" width="1000" height="220" rx="10" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1.5"/>
+  <text x="36" y="194" font-size="13" font-weight="600" fill="#276749">ORCHESTRATION LAYER (Layer 2) &mdash; Data Service on Cloud Run</text>
+
+  <!-- Processing Zone -->
+  <rect x="20" y="410" width="1000" height="250" rx="10" fill="#fff5f5" stroke="#feb2b2" stroke-width="1.5"/>
+  <text x="36" y="434" font-size="13" font-weight="600" fill="#c53030">MESSAGE PROCESSING ENGINE (Layer 3) &mdash; Enrichment Service on Cloud Run</text>
+
+  <!-- GCP Managed Services -->
+  <rect x="20" y="680" width="1000" height="220" rx="10" fill="#fffff0" stroke="#fefcbf" stroke-width="1.5"/>
+  <text x="36" y="704" font-size="13" font-weight="600" fill="#975a16">GCP MANAGED SERVICES</text>
+
+  <!-- === CLIENT LAYER === -->
+  <!-- Careverse Angular -->
+  <rect x="60" y="60" width="200" height="68" rx="8" fill="#ffffff" stroke="#3182ce" stroke-width="2"/>
+  <text x="160" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Careverse</text>
+  <text x="160" y="106" text-anchor="middle" font-size="11" fill="#718096">Angular / TypeScript</text>
+
+  <!-- Client Test Service -->
+  <rect x="340" y="60" width="200" height="68" rx="8" fill="#ffffff" stroke="#3182ce" stroke-width="2"/>
+  <text x="440" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Client Test Service</text>
+  <text x="440" y="106" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.2.5 / Java 21</text>
+
+  <!-- Arrow labels -->
+  <text x="700" y="82" font-size="11" fill="#718096">Port 9090 / Thymeleaf UI</text>
+  <text x="700" y="102" font-size="11" fill="#718096">19 BC PharmaNet views</text>
+
+  <!-- Arrow: Client -> Data Service -->
+  <line x1="260" y1="128" x2="260" y2="210" stroke="#3182ce" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="440" y1="128" x2="440" y2="210" stroke="#3182ce" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <text x="290" y="175" font-size="10" fill="#3182ce">HTTP POST (JSON)</text>
+
+  <!-- === ORCHESTRATION LAYER === -->
+  <!-- Data Service -->
+  <rect x="140" y="210" width="280" height="80" rx="8" fill="#ffffff" stroke="#38a169" stroke-width="2"/>
+  <text x="280" y="236" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Data Service</text>
+  <text x="280" y="254" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.5.13 / Cloud Run</text>
+  <text x="280" y="272" text-anchor="middle" font-size="11" fill="#718096">POST /api/dis/bc/publish</text>
+
+  <!-- Data Service actions -->
+  <rect x="500" y="210" width="220" height="68" rx="6" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1"/>
+  <text x="610" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#276749">Orchestration Steps:</text>
+  <text x="610" y="250" text-anchor="middle" font-size="11" fill="#2d3748">1. Persist inbound to Firestore</text>
+  <text x="610" y="266" text-anchor="middle" font-size="11" fill="#2d3748">2. Publish to Pub/Sub topic</text>
+
+  <rect x="760" y="210" width="230" height="68" rx="6" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1"/>
+  <text x="875" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#276749">Response Handling:</text>
+  <text x="875" y="250" text-anchor="middle" font-size="11" fill="#2d3748">3. Poll Firestore (225 retries)</text>
+  <text x="875" y="266" text-anchor="middle" font-size="11" fill="#2d3748">4. Return response to client</text>
+
+  <!-- Correlation box -->
+  <rect x="500" y="300" width="490" height="52" rx="6" fill="#ebf4ff" stroke="#90cdf4" stroke-width="1"/>
+  <text x="745" y="322" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Correlation Model: Header.messageId binds all services end-to-end</text>
+  <text x="745" y="340" text-anchor="middle" font-size="11" fill="#718096">Document ID in Firestore = messageId | Pub/Sub attribute = correlationMessageId</text>
+
+  <!-- Arrow: Data Service -> Pub/Sub -->
+  <line x1="280" y1="290" x2="280" y2="730" stroke="#38a169" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrow-green)"/>
+  <text x="196" y="510" font-size="10" fill="#38a169" transform="rotate(-90, 196, 510)">Publish JSON</text>
+
+  <!-- === PROCESSING LAYER === -->
+  <!-- Enrichment Service -->
+  <rect x="420" y="450" width="300" height="80" rx="8" fill="#ffffff" stroke="#e53e3e" stroke-width="2"/>
+  <text x="570" y="476" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Enrichment Service</text>
+  <text x="570" y="494" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.5.13 / Cloud Run</text>
+  <text x="570" y="512" text-anchor="middle" font-size="11" fill="#718096">POST /api/pharmanet/push-handler</text>
+
+  <!-- Builder boxes -->
+  <rect x="60" y="460" width="150" height="60" rx="6" fill="#fff5f5" stroke="#feb2b2" stroke-width="1"/>
+  <text x="135" y="484" text-anchor="middle" font-size="11" font-weight="600" fill="#c53030">HL7 v2 Builders</text>
+  <text x="135" y="502" text-anchor="middle" font-size="11" fill="#718096">24 PharmaNet + 41 ADT</text>
+
+  <rect x="60" y="540" width="150" height="60" rx="6" fill="#fff5f5" stroke="#feb2b2" stroke-width="1"/>
+  <text x="135" y="564" text-anchor="middle" font-size="11" font-weight="600" fill="#c53030">HL7 v3 Builders</text>
+  <text x="135" y="582" text-anchor="middle" font-size="11" fill="#718096">JAXB XML (HCIM)</text>
+
+  <!-- Arrow: Enrichment -> builders -->
+  <line x1="420" y1="490" x2="210" y2="490" stroke="#e53e3e" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <line x1="420" y1="490" x2="300" y2="570" stroke="#e53e3e" stroke-width="1.5"/>
+  <line x1="300" y1="570" x2="210" y2="570" stroke="#e53e3e" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- PharmaNet -->
+  <rect x="780" y="460" width="200" height="64" rx="8" fill="#ffffff" stroke="#805ad5" stroke-width="2"/>
+  <text x="880" y="486" text-anchor="middle" font-size="14" font-weight="700" fill="#553c9a">BC PharmaNet</text>
+  <text x="880" y="504" text-anchor="middle" font-size="11" fill="#718096">HL7 v2/v3 Endpoint</text>
+
+  <!-- Arrow: Enrichment -> PharmaNet -->
+  <line x1="720" y1="490" x2="780" y2="490" stroke="#805ad5" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <text x="746" y="482" font-size="10" fill="#805ad5">HL7</text>
+
+  <!-- Arrow: PharmaNet -> Enrichment -->
+  <line x1="780" y1="510" x2="720" y2="510" stroke="#805ad5" stroke-width="2" marker-end="url(#arrow-purple-r)"/>
+  <text x="742" y="526" font-size="10" fill="#805ad5">ACK</text>
+
+  <!-- Arrow: Enrichment -> Firestore -->
+  <line x1="570" y1="530" x2="570" y2="730" stroke="#e53e3e" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrow-red)"/>
+  <text x="590" y="640" font-size="10" fill="#e53e3e">Save response</text>
+
+  <!-- Simulated mode label -->
+  <rect x="780" y="540" width="200" height="36" rx="4" fill="#fefcbf" stroke="#d69e2e" stroke-width="1"/>
+  <text x="880" y="564" text-anchor="middle" font-size="11" fill="#975a16">SIMULATED mode for dev/test</text>
+
+  <!-- === GCP SERVICES === -->
+  <!-- Pub/Sub -->
+  <rect x="170" y="720" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="280" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Pub/Sub</text>
+  <text x="280" y="766" text-anchor="middle" font-size="11" fill="#718096">Topic: dis-bc-request</text>
+  <text x="280" y="782" text-anchor="middle" font-size="11" fill="#718096">Push subscription</text>
+
+  <!-- Arrow: Pub/Sub -> Enrichment -->
+  <line x1="390" y1="740" x2="520" y2="530" stroke="#d69e2e" stroke-width="2" marker-end="url(#arrow-yellow)"/>
+  <text x="430" y="625" font-size="10" fill="#d69e2e" transform="rotate(-50, 430, 625)">HTTP Push POST</text>
+
+  <!-- Firestore -->
+  <rect x="450" y="720" width="260" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="580" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Firestore</text>
+  <text x="580" y="766" text-anchor="middle" font-size="11" fill="#718096">dis-bc-inbound-requests</text>
+  <text x="580" y="782" text-anchor="middle" font-size="11" fill="#718096">dis-bc-responses</text>
+
+  <!-- Artifact Registry + Cloud Build -->
+  <rect x="770" y="720" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="880" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Build</text>
+  <text x="880" y="766" text-anchor="middle" font-size="11" fill="#718096">Artifact Registry</text>
+  <text x="880" y="782" text-anchor="middle" font-size="11" fill="#718096">Container images</text>
+
+  <!-- Cloud Logging + Monitoring -->
+  <rect x="170" y="810" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="280" y="838" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Logging</text>
+  <text x="280" y="856" text-anchor="middle" font-size="11" fill="#718096">stdout from Cloud Run</text>
+  <text x="280" y="872" text-anchor="middle" font-size="11" fill="#718096">(Target: Monitoring + Trace)</text>
+
+  <!-- Region label -->
+  <rect x="450" y="810" width="260" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="580" y="838" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">GCP Project</text>
+  <text x="580" y="856" text-anchor="middle" font-size="11" fill="#718096">solis-public</text>
+  <text x="580" y="872" text-anchor="middle" font-size="11" fill="#718096">northamerica-northeast1 (Montreal)</text>
+
+  <!-- Security target state -->
+  <rect x="770" y="810" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2" stroke-dasharray="4,2"/>
+  <text x="880" y="834" text-anchor="middle" font-size="13" font-weight="700" fill="#975a16">Target State</text>
+  <text x="880" y="852" text-anchor="middle" font-size="11" fill="#718096">VPC + Cloud Armor WAF</text>
+  <text x="880" y="868" text-anchor="middle" font-size="11" fill="#718096">Secret Manager + IAM</text>
+  <text x="880" y="884" text-anchor="middle" font-size="11" fill="#718096">Multi-region (Toronto DR)</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#3182ce"/></marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#38a169"/></marker>
+    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#e53e3e"/></marker>
+    <marker id="arrow-yellow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#d69e2e"/></marker>
+    <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#805ad5"/></marker>
+    <marker id="arrow-purple-r" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="#805ad5"/></marker>
+  </defs>
+
+</svg>
+</div>
+
+<!-- TECHNOLOGY STACK -->
+<h2 id="tech-stack">3. Technology Stack</h2>
+
+<div class="tech-stack">
+  <div class="tech-item"><div class="label">Client Application</div><div class="value">Angular / TypeScript</div></div>
+  <div class="tech-item"><div class="label">Test Client</div><div class="value">Spring Boot 3.2.5 / Java 21</div></div>
+  <div class="tech-item"><div class="label">Data Service</div><div class="value">Spring Boot 3.5.13</div></div>
+  <div class="tech-item"><div class="label">Enrichment Service</div><div class="value">Spring Boot 3.5.13</div></div>
+  <div class="tech-item"><div class="label">Runtime JRE</div><div class="value">Eclipse Temurin 23</div></div>
+  <div class="tech-item"><div class="label">Compute</div><div class="value">Google Cloud Run</div></div>
+  <div class="tech-item"><div class="label">Database</div><div class="value">Cloud Firestore (NoSQL)</div></div>
+  <div class="tech-item"><div class="label">Messaging</div><div class="value">Cloud Pub/Sub (Push)</div></div>
+  <div class="tech-item"><div class="label">Container Registry</div><div class="value">GCP Artifact Registry</div></div>
+  <div class="tech-item"><div class="label">Build Pipeline</div><div class="value">Google Cloud Build</div></div>
+  <div class="tech-item"><div class="label">Region</div><div class="value">Montreal (CA)</div></div>
+  <div class="tech-item"><div class="label">API Docs</div><div class="value">SpringDoc OpenAPI 2.8.6</div></div>
+</div>
+
+<!-- DATA FLOW -->
+<h2 id="data-flow">4. End-to-End Data Flow</h2>
+
+<div class="card">
+  <div class="flow-step">
+    <div class="flow-num">1</div>
+    <div><strong>User submits request</strong> &mdash; Careverse Angular UI (or test Client Service) collects business data (patient, prescription, pharmacy). Client Service&rsquo;s <code>BCPayloadBuilder</code> wraps it into a full JSON envelope with Header, Sender, Receiver, MSH, Event, Candidate, Visit, and PharmaNet Z-segments. A unique <code>messageId</code> is generated.</div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">2</div>
+    <div><strong>Data Service receives and orchestrates</strong> &mdash; <code>POST /api/dis/bc/publish</code> persists the inbound request to Firestore collection <code>dis-bc-inbound-requests</code> (schema: <code>PHARMANET_INBOUND_V1</code>), publishes the full JSON to Pub/Sub topic <code>dis-bc-request</code> with attribute <code>correlationMessageId</code>, then begins polling Firestore <code>dis-bc-responses</code> (up to 225 retries at 200ms intervals).</div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">3</div>
+    <div><strong>Pub/Sub delivers via push</strong> &mdash; GCP Pub/Sub pushes the message as an HTTP POST to the Enrichment Service at <code>/api/pharmanet/push-handler</code>. The push envelope contains Base64-encoded message data and <code>publishTime</code>.</div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">4</div>
+    <div><strong>Enrichment Service processes</strong> &mdash; Decodes Base64, checks message age (drops stale &gt;120s), extracts <code>eventTypeCode</code> and <code>versionCode</code>. Routes to the correct builder: HL7 v3 XML for <code>V3PR1</code>, HL7 v2 PharmaNet builders for pharmacy transactions, or ADT builders for admit/discharge events. Builds the HL7 message, sends to PharmaNet endpoint (real or SIMULATED), and writes the response to Firestore <code>dis-bc-responses</code> keyed by <code>messageId</code>.</div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">5</div>
+    <div><strong>Response returned</strong> &mdash; Data Service&rsquo;s poll detects the new Firestore document. Returns the full response (including <code>hl7Request</code>, <code>hl7Response</code>, <code>jsonRequest</code>, timestamps) as HTTP 200 to the Client Service. The client renders three panels: HL7 Request, HL7 Response, and Full Database Record.</div>
+  </div>
+</div>
+
+<!-- SERVICE INVENTORY -->
+<h2 id="service-inventory">5. Service Inventory</h2>
+
+<table>
+  <tr><th>Service</th><th>Repository</th><th>Cloud Run Name</th><th>Port</th><th>Classes</th><th>Tests</th></tr>
+  <tr><td>Client Test Service</td><td>solis-adj-cphaClientService</td><td>(local / optional)</td><td>9090</td><td>10</td><td>0</td></tr>
+  <tr><td>Data Service</td><td>solis-dis-dataservice</td><td>solis-dis-dataservice</td><td>8080</td><td>24</td><td>46</td></tr>
+  <tr><td>Enrichment Service</td><td>solis-dis-enrichmentservice</td><td>solis-dis-enrichmentservice</td><td>8080</td><td>65+</td><td>12+</td></tr>
+</table>
+
+<h3>GCP Resources</h3>
+<table>
+  <tr><th>Resource</th><th>Name / ID</th></tr>
+  <tr><td>GCP Project</td><td>solis-public</td></tr>
+  <tr><td>Region</td><td>northamerica-northeast1 (Montreal)</td></tr>
+  <tr><td>Pub/Sub Topic</td><td>dis-bc-request</td></tr>
+  <tr><td>Pub/Sub Subscription</td><td>dis-bc-request-sub (push)</td></tr>
+  <tr><td>Firestore Collection (inbound)</td><td>dis-bc-inbound-requests</td></tr>
+  <tr><td>Firestore Collection (responses)</td><td>dis-bc-responses</td></tr>
+  <tr><td>Artifact Registry</td><td>solis-public/solis-dis-messages</td></tr>
+</table>
+
+<!-- HL7 MESSAGE COVERAGE -->
+<h2 id="hl7-coverage">6. HL7 Message Coverage (32 Types)</h2>
+
+<h3>Mandatory PharmaNet (HL7 v2) &mdash; 12 types</h3>
+<table>
+  <tr><th>Event Code</th><th>Transaction</th><th>Builder Class</th></tr>
+  <tr><td>TAC_TDU</td><td>Adjudicate Dispense Claim</td><td>AdjudicateDispenseClaimBuilder</td></tr>
+  <tr><td>TAC_TDU_11</td><td>Claim Reversal</td><td>ClaimReversalBuilder</td></tr>
+  <tr><td>TDT</td><td>Adjudication Reconciliation</td><td>AdjudicationReconciliationBuilder</td></tr>
+  <tr><td>TCP</td><td>Patient Keyword Maintenance</td><td>PatientKeywordMaintenanceBuilder</td></tr>
+  <tr><td>TIL</td><td>Location Details</td><td>GetLocationDetailsBuilder</td></tr>
+  <tr><td>TIP</td><td>Prescriber Identification</td><td>PrescriberIdentificationBuilder</td></tr>
+  <tr><td>TPI</td><td>Profile Info Update</td><td>PatientProfileInfoUpdateBuilder</td></tr>
+  <tr><td>TRP</td><td>Patient Profile (14 months)</td><td>PatientProfileRequestBuilder</td></tr>
+  <tr><td>TRX_X0</td><td>Retrieve Prescription</td><td>RetrievePatientPrescriptionBuilder</td></tr>
+  <tr><td>TRX_X1</td><td>Record Prescription</td><td>RecordPrescriptionBuilder</td></tr>
+  <tr><td>TRX_X2</td><td>Update Prescription Status</td><td>UpdatePrescriptionStatusBuilder</td></tr>
+  <tr><td>TRX_X3</td><td>Adjust/Adapt Prescription</td><td>AdjustAdaptPrescriptionBuilder</td></tr>
+</table>
+
+<h3>Optional PharmaNet (HL7 v2) &mdash; 12 types</h3>
+<table>
+  <tr><th>Event Code</th><th>Transaction</th><th>Builder Class</th></tr>
+  <tr><td>TID</td><td>Patient Identification</td><td>PatientIdentificationBuilder</td></tr>
+  <tr><td>TPA</td><td>Patient Address Update</td><td>PatientAddressUpdateBuilder</td></tr>
+  <tr><td>TPH</td><td>PHN Assignment</td><td>PhnAssignmentBuilder</td></tr>
+  <tr><td>TPN</td><td>Patient Name Search</td><td>PatientNameSearchBuilder</td></tr>
+  <tr><td>TDR</td><td>Drug Monograph</td><td>DrugMonographBuilder</td></tr>
+  <tr><td>TDU_INQUIRY</td><td>DUE Inquiry</td><td>DueInquiryBuilder</td></tr>
+  <tr><td>TPM</td><td>Profile Mailing Request</td><td>ProfileMailingRequestBuilder</td></tr>
+  <tr><td>TMU</td><td>Medication Update</td><td>MedicationUpdateBuilder</td></tr>
+  <tr><td>TMU_REVERSAL</td><td>Medication Update Reversal</td><td>MedicationUpdateReversalBuilder</td></tr>
+  <tr><td>TRR</td><td>Patient Profile Recent</td><td>PatientProfileRecentBuilder</td></tr>
+  <tr><td>TRS</td><td>Profile Filled Elsewhere</td><td>PatientProfileFilledElsewhereBuilder</td></tr>
+  <tr><td>TRX_X4</td><td>Prescriber Rx Retrieve</td><td>RetrievePrescriberPrescriptionBuilder</td></tr>
+</table>
+
+<h3>HL7 v3 (XML/JAXB) &mdash; 2 types</h3>
+<table>
+  <tr><th>Event Code</th><th>Transaction</th><th>Builder</th></tr>
+  <tr><td>HCIM_IN_FindCandidates</td><td>Find Candidate</td><td>FindCandidateMessageService</td></tr>
+  <tr><td>HCIM_IN_GetCandidate</td><td>Get Demographics</td><td>GetDemographicsService</td></tr>
+</table>
+
+<h3>ADT Messages (HL7 v2) &mdash; 6 types</h3>
+<table>
+  <tr><th>Event Code</th><th>Message</th><th>Builder Class</th></tr>
+  <tr><td>A01</td><td>Admit Patient</td><td>AdmitPatientMessageBuilder</td></tr>
+  <tr><td>A02</td><td>Transfer Patient</td><td>TransferPatientMessageBuilder</td></tr>
+  <tr><td>A03</td><td>Discharge Patient</td><td>DischargePatientMessageBuilder</td></tr>
+  <tr><td>A08</td><td>Update Patient Info</td><td>UpdatePatientMessageBuilder</td></tr>
+  <tr><td>A31</td><td>Demographic Update</td><td>DemographicUpdateMessageBuilder</td></tr>
+  <tr><td>DISPENSE</td><td>Dispense Event</td><td>DispenseEventBuilder</td></tr>
+</table>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 1 -->
+<!-- ============================================================ -->
+<h2 id="cat1">Category 1: Data Sovereignty &amp; Jurisdictional Compliance</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">1</div>
+    <div class="card-title">Where does PHI reside at rest, in transit, and during processing? Can you prove it never leaves Canadian borders?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> All PHI resides exclusively within Canadian borders. Our GCP infrastructure is deployed to <strong>northamerica-northeast1 (Montreal)</strong>. Firestore stores all documents in the Montreal region. Cloud Pub/Sub messages are stored in the same region as the topic. Cloud Run containers process data in Montreal. Cloud Logging is configured to the same region.
+    <br><br>
+    <strong>To strengthen this answer:</strong> We will configure an Organization Policy constraint (<code>gcp.resourceLocations</code>) to enforce that all resources must be created in Canadian regions only. We will also ensure Cloud Logging sinks route exclusively to Canadian-region Cloud Storage or BigQuery datasets. A formal data residency audit will be conducted to verify that no GCP service (including Artifact Registry build logs, error reporting, or support diagnostics) replicates data outside Canada.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">2</div>
+    <div class="card-title">Which provincial health information acts govern this data?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The following legislation applies:
+    <ul>
+      <li><strong>BC Freedom of Information and Protection of Privacy Act (FIPPA)</strong> &mdash; Governs how public bodies collect, use, and disclose personal information</li>
+      <li><strong>BC E-Health (Personal Health Information Access and Protection of Privacy) Act</strong> &mdash; Specifically governs the PharmaNet database and access to it</li>
+      <li><strong>BC Pharmaceutical Services Act</strong> and <strong>PharmaCare Policies</strong> &mdash; Regulate pharmacy transactions and PharmaNet software certification</li>
+      <li><strong>PIPEDA (Personal Information Protection and Electronic Documents Act)</strong> &mdash; Federal privacy legislation applicable to commercial health data processing</li>
+      <li><strong>BC Personal Information Protection Act (PIPA)</strong> &mdash; Provincial private-sector privacy law</li>
+    </ul>
+    Our architecture is designed so that technical controls (access control, audit logging, encryption, data residency) map to the requirements of each act. A formal legal-to-technical controls mapping document will be produced as part of the compliance certification phase.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">3</div>
+    <div class="card-title">Is there a Data Protection Impact Assessment (DPIA)?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No DPIA has been conducted.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> A Data Protection Impact Assessment is planned and will be completed prior to production deployment. The DPIA will assess: (1) the nature and scope of PHI processing, (2) data flows across services and GCP components, (3) risks to patient privacy, (4) safeguards implemented (encryption, access control, audit logging, data minimization), and (5) residual risk assessment. The DPIA will be submitted to the BC Office of the Information and Privacy Commissioner (OIPC) as part of our Privacy Impact Assessment (PIA) process, which is mandatory under BC FIPPA for new systems processing personal health information.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">4</div>
+    <div class="card-title">Who is the data custodian vs. data processor? Is that contractually defined?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The data roles are as follows:
+    <ul>
+      <li><strong>Data Custodian:</strong> The pharmacy or health authority submitting transactions through Careverse. They determine the purpose and means of PHI processing.</li>
+      <li><strong>Data Processor:</strong> Solis / Careverse, operating the platform that processes PHI on behalf of the custodian.</li>
+      <li><strong>Sub-Processor:</strong> Google Cloud Platform, providing infrastructure services (compute, storage, messaging).</li>
+    </ul>
+    A <strong>Data Processing Agreement (DPA)</strong> will be executed with Google Cloud (Google provides a standard DPA for healthcare workloads that covers PIPEDA requirements). A <strong>Business Associate Agreement (BAA)</strong> equivalent will be established with each pharmacy or health authority client. These agreements will define data handling obligations, breach notification requirements, data retention, and sub-processor governance. Estimated completion: 2 days within the security hardening roadmap.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">5</div>
+    <div class="card-title">Does your Firestore TTL (30-day expireOn) satisfy both minimum retention and right-to-deletion requirements?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The current 30-day TTL on Firestore response documents is designed for operational data minimization &mdash; we retain only what is needed for active transaction correlation and troubleshooting. However, this must be reconciled with:
+    <ul>
+      <li><strong>BC Pharmaceutical Services Act:</strong> Pharmacy records may require longer retention (typically 3+ years for prescription records)</li>
+      <li><strong>Audit requirements:</strong> Audit trails should be retained for the period required by the applicable compliance framework (e.g., 7 years for SOC 2)</li>
+    </ul>
+    Our approach: Operational Firestore documents will maintain the 30-day TTL for performance. Before TTL expiry, a scheduled Cloud Function will export audit-relevant fields (messageId, eventTypeCode, timestamps &mdash; <em>without</em> PHI) to a long-term Cloud Storage archive with configurable retention. This separates the operational concern from the regulatory retention concern and follows the data minimization principle.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 2 -->
+<!-- ============================================================ -->
+<h2 id="cat2">Category 2: Authentication, Authorization &amp; Identity</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">6</div>
+    <div class="card-title">Show me the authentication chain end-to-end. Who authenticates the user, and how is that identity propagated to each service?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No authentication exists at any layer. All endpoints are publicly accessible.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> The authentication chain will operate as follows:
+    <ul>
+      <li><strong>User &rarr; Careverse Angular:</strong> Users authenticate via the organization&rsquo;s identity provider (e.g., Azure AD, Okta) using OpenID Connect. The Angular app receives a JWT access token.</li>
+      <li><strong>Careverse &rarr; Data Service:</strong> The JWT is passed as a Bearer token in the <code>Authorization</code> header. Spring Security on the Data Service validates the JWT signature, issuer, audience, and expiry. User identity (roles, pharmacy ID) is extracted from claims.</li>
+      <li><strong>Data Service &rarr; Pub/Sub:</strong> Service-to-service authentication via GCP IAM. The Data Service&rsquo;s Cloud Run service account has <code>pubsub.publisher</code> role.</li>
+      <li><strong>Pub/Sub &rarr; Enrichment Service:</strong> Google Pub/Sub attaches an OIDC token to push requests. The Enrichment Service validates the token using Google&rsquo;s public keys, verifying the service account identity and audience.</li>
+      <li><strong>Enrichment Service &rarr; PharmaNet:</strong> Authenticated via PharmaNet-specific credentials (pharmacy ID, software ID) embedded in HL7 MSH segment.</li>
+    </ul>
+    Implementation: Phase 1 of the security hardening plan (3 days).
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">7</div>
+    <div class="card-title">How do you prevent a rogue actor from calling /api/dis/bc/publish directly with fabricated PHI?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> Anyone who discovers the Cloud Run URL can submit messages. No authentication, rate limiting, or input validation beyond <code>Header.messageId</code> presence.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> Multiple layers of defense will be implemented:
+    <ol>
+      <li><strong>Cloud Run IAM:</strong> <code>--no-allow-unauthenticated</code> flag. Only authorized service accounts and authenticated users can invoke the service.</li>
+      <li><strong>JWT Validation:</strong> Spring Security filter chain validates Bearer tokens before any business logic executes.</li>
+      <li><strong>Cloud Armor WAF:</strong> Rate limiting, geo-restriction (Canada only), OWASP top-10 rules applied at the load balancer.</li>
+      <li><strong>Input Validation:</strong> JSON schema validation for all incoming payloads. Required fields, type checking, max lengths, and allowlisted <code>eventTypeCode</code> values.</li>
+      <li><strong>Audit Logging:</strong> Every request is logged with caller identity, IP, and timestamp for forensic analysis.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">8</div>
+    <div class="card-title">What is your service-to-service authentication model?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> Plain HTTP POST between Client Service and Data Service. No service identity, no mTLS, no API key.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> Service-to-service authentication will use <strong>GCP IAM identity tokens</strong>:
+    <ul>
+      <li>Each Cloud Run service has a dedicated GCP service account with least-privilege IAM roles.</li>
+      <li>The Client Service (or Careverse backend) will obtain an identity token from the GCP metadata server and include it as a Bearer token when calling the Data Service.</li>
+      <li>Cloud Run&rsquo;s built-in IAM authentication verifies the identity token before routing the request to the container.</li>
+      <li>For the Pub/Sub &rarr; Enrichment path, Google&rsquo;s push subscription automatically attaches OIDC tokens signed by Google.</li>
+    </ul>
+    This model eliminates the need for application-level API keys or shared secrets between services.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">9</div>
+    <div class="card-title">How do you ensure the Pub/Sub push messages are actually from Google and not spoofed?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> The Enrichment Service&rsquo;s push handler at <code>/api/pharmanet/push-handler</code> accepts any HTTP POST. No OIDC token verification. A spoofed request could inject fake PharmaNet responses into Firestore.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> The Enrichment Service will verify Pub/Sub push authenticity using two mechanisms:
+    <ol>
+      <li><strong>Cloud Run IAM ingress:</strong> Setting <code>--ingress=internal</code> ensures only traffic from within the GCP project (including Pub/Sub) can reach the service. External HTTP requests are rejected at the infrastructure level.</li>
+      <li><strong>OIDC Token Verification:</strong> The push subscription will be configured with a service account. Google attaches a signed OIDC JWT to every push request. The Enrichment Service will validate this token using Google&rsquo;s public JWKS endpoint, checking the <code>iss</code>, <code>aud</code>, and <code>email</code> claims.</li>
+    </ol>
+    Implementation: Phase 1.2 of the security hardening plan (1 day).
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">10</div>
+    <div class="card-title">What is your session management and token lifecycle for the Angular client?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Careverse (Angular) will implement standard OIDC session management:
+    <ul>
+      <li><strong>Token acquisition:</strong> Authorization Code flow with PKCE (no implicit grant) via the organization&rsquo;s IdP</li>
+      <li><strong>Access tokens:</strong> Short-lived (15&ndash;30 minute expiry), stored in memory only (not localStorage)</li>
+      <li><strong>Refresh tokens:</strong> Stored in HTTP-only, secure, SameSite cookies with rotation on each use</li>
+      <li><strong>Session timeout:</strong> Configurable idle timeout (e.g., 15 minutes) with automatic token refresh</li>
+      <li><strong>Logout:</strong> Token revocation at the IdP + clear local state</li>
+    </ul>
+    The specific IdP integration (Azure AD, Okta, or Keycloak) will be determined during the Careverse Angular authentication implementation, which is a separate workstream from the backend hardening.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 3 -->
+<!-- ============================================================ -->
+<h2 id="cat3">Category 3: Threat Modeling &amp; Attack Surface</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">11</div>
+    <div class="card-title">Have you done a formal threat model (STRIDE, DREAD, or PASTA)?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No formal threat model exists.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> A formal threat model using the <strong>STRIDE</strong> methodology will be conducted. Preliminary findings based on the architecture review:
+    <table>
+      <tr><th>Threat</th><th>Current Risk</th><th>Mitigation (Target)</th></tr>
+      <tr><td><strong>Spoofing</strong> &mdash; Unauthenticated callers</td><td>Critical</td><td>JWT + IAM + OIDC verification</td></tr>
+      <tr><td><strong>Tampering</strong> &mdash; No message integrity</td><td>High</td><td>HTTPS + IAM ingress + input validation</td></tr>
+      <tr><td><strong>Repudiation</strong> &mdash; No audit trail</td><td>Critical</td><td>Cloud Audit Logs + app-level audit events</td></tr>
+      <tr><td><strong>Information Disclosure</strong> &mdash; PHI in logs</td><td>Critical</td><td>Log redaction + structured logging</td></tr>
+      <tr><td><strong>Denial of Service</strong> &mdash; No rate limits</td><td>High</td><td>Cloud Armor WAF + rate limiting</td></tr>
+      <tr><td><strong>Elevation of Privilege</strong> &mdash; No RBAC</td><td>Critical</td><td>Role-based access from JWT claims</td></tr>
+    </table>
+    The full threat model document will be produced as part of Phase 4 (compliance documentation) and will include data flow diagrams, trust boundaries, threat enumeration, and risk scoring.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">12</div>
+    <div class="card-title">What happens if someone submits a massive JSON payload to /api/dis/bc/publish?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Defense-in-depth measures will be implemented:
+    <ul>
+      <li><strong>Cloud Run:</strong> Default 32MB request body limit (configurable). This provides a baseline ceiling.</li>
+      <li><strong>Spring Boot:</strong> <code>server.max-http-request-size</code> will be set to a reasonable limit (e.g., 256KB for PharmaNet payloads).</li>
+      <li><strong>Application Layer:</strong> JSON schema validation on the Data Service will reject payloads that do not conform to the expected structure, including field-level max-length constraints.</li>
+      <li><strong>Cloud Armor:</strong> Request size limits and rate limiting at the WAF layer to prevent volumetric abuse.</li>
+      <li><strong>Firestore:</strong> Document size limit is 1MB (inherent protection against unbounded writes).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">13</div>
+    <div class="card-title">Your BCPayloadBuilder has a hardcoded MSH.security string in source code. What is that?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> The <code>MSH.security</code> field in <code>BCPayloadBuilder.java</code> contains a literal string that appears to be a credential or security token, committed to source control.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> This will be remediated immediately:
+    <ol>
+      <li>The hardcoded value will be removed from source code and replaced with a reference to <strong>Google Secret Manager</strong>.</li>
+      <li>The secret will be stored in Secret Manager with appropriate IAM access controls (only the Data Service&rsquo;s service account can read it).</li>
+      <li>The git history will be audited. If this is a production credential, it must be rotated immediately after the migration.</li>
+      <li>A pre-commit hook will be added to scan for potential secrets (e.g., using <code>gitleaks</code> or <code>detect-secrets</code>).</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">14</div>
+    <div class="card-title">What prevents a Pub/Sub message replay attack?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Multiple controls mitigate replay risk:
+    <ul>
+      <li><strong>Message age check:</strong> The Enrichment Service rejects messages older than 120 seconds (based on <code>publishTime</code>), returning HTTP 204 to ACK without processing.</li>
+      <li><strong>Idempotent writes:</strong> Firestore document ID = <code>messageId</code>. Duplicate processing overwrites the same document with identical data rather than creating duplicates.</li>
+      <li><strong>Unique message IDs:</strong> Each request generates a cryptographically random <code>messageId</code> using <code>SecureRandom</code>, making collisions practically impossible.</li>
+    </ul>
+    <strong>Residual risk:</strong> PharmaNet calls are NOT idempotent &mdash; a replayed dispense claim could be processed twice at PharmaNet. Mitigation: the 120-second staleness window limits the replay window, and PharmaNet&rsquo;s own duplicate detection (based on pharmacy ID + timestamp + Rx number) provides a secondary check.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 4 -->
+<!-- ============================================================ -->
+<h2 id="cat4">Category 4: Data Protection &amp; PHI Handling</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">15</div>
+    <div class="card-title">Can you show me your data classification scheme?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No formal data classification exists. PHI, PII, and operational data are treated identically.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The following data classification scheme will be adopted:
+    <table>
+      <tr><th>Classification</th><th>Description</th><th>Examples</th><th>Controls</th></tr>
+      <tr><td><strong>PHI (Critical)</strong></td><td>Personal Health Information</td><td>PHN, prescriptions, drug details, diagnoses</td><td>Encrypted at rest + in transit, access logged, log-redacted, shortest possible retention</td></tr>
+      <tr><td><strong>PII (High)</strong></td><td>Personally Identifiable Info</td><td>Patient name, DOB, address, phone</td><td>Encrypted, access-controlled, log-redacted</td></tr>
+      <tr><td><strong>Operational (Medium)</strong></td><td>System operational data</td><td>messageId, eventTypeCode, timestamps, HL7 segment codes</td><td>Encrypted in transit, standard access controls</td></tr>
+      <tr><td><strong>Public (Low)</strong></td><td>Non-sensitive data</td><td>API documentation, health check status, build metadata</td><td>Standard protections</td></tr>
+    </table>
+    This classification will be documented in the Data Classification Policy (Phase 4.4) and will drive technical controls for logging, encryption, access, and retention.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">16</div>
+    <div class="card-title">Is PHI encrypted at the application level, or solely via GCP encryption at rest?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Currently, we rely on GCP&rsquo;s default encryption:
+    <ul>
+      <li><strong>At rest:</strong> Firestore encrypts all data using AES-256 with Google-managed keys (default). Data is encrypted at the storage layer transparently.</li>
+      <li><strong>In transit:</strong> All Cloud Run traffic is TLS 1.2+ (enforced by GCP). Pub/Sub messages are encrypted in transit.</li>
+    </ul>
+    <strong>Planned enhancement:</strong> For the most sensitive PHI fields (PHN, patient name, DOB), we will evaluate <strong>application-level field encryption</strong> using Google Cloud KMS before writing to Firestore, so that even a Firestore admin cannot read raw PHI without the application&rsquo;s KMS key. We will also evaluate <strong>Customer-Managed Encryption Keys (CMEK)</strong> for Firestore to give us key rotation and revocation control.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">17</div>
+    <div class="card-title">Show me a log sample. Is PHI being logged?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> All JSON payloads (containing patient names, PHNs, prescriptions) flow through standard Java logging. PHI almost certainly appears in Cloud Run stdout captured by Cloud Logging.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> PHI log redaction will be implemented via:
+    <ol>
+      <li><strong>logback-spring.xml:</strong> Custom <code>PatternLayout</code> with a regex-based converter that masks PHI patterns (10-digit PHN format, patient name fields, DOB patterns) before writing to stdout.</li>
+      <li><strong>Structured JSON logging:</strong> Moving from plain-text logs to structured JSON format using Logback&rsquo;s <code>LogstashEncoder</code> &mdash; this enables Cloud Logging to parse fields and apply log-level filtering.</li>
+      <li><strong>Code-level discipline:</strong> Logger statements will be audited to ensure no <code>logger.info(payload)</code> or <code>logger.debug(jsonRequest)</code> statements exist that dump full PHI.</li>
+      <li><strong>Cloud Logging:</strong> A log sink will route to a restricted BigQuery dataset with IAM controls limiting who can query logs containing any residual PHI.</li>
+    </ol>
+    Implementation: Phase 2.5 of the security hardening plan (1 day).
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">18</div>
+    <div class="card-title">What is your data minimization strategy?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Data minimization is applied at multiple levels:
+    <ul>
+      <li><strong>Client layer:</strong> Only business-relevant fields (patient name, PHN, DOB, prescription data) are collected from the user. The full HL7 envelope is assembled server-side &mdash; users never see or manipulate HL7 segments directly.</li>
+      <li><strong>Firestore inbound:</strong> The <code>dis-bc-inbound-requests</code> collection stores the full payload for audit and correlation purposes. TTL-based expiry ensures documents are deleted after 30 days.</li>
+      <li><strong>Firestore responses:</strong> Similarly TTL-controlled. Only the data needed for response correlation is stored.</li>
+      <li><strong>Long-term archives:</strong> When implemented, only non-PHI audit fields (messageId, eventTypeCode, timestamps, success/failure) will be exported to long-term storage. PHI will NOT be archived beyond the operational TTL.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">19</div>
+    <div class="card-title">How do you handle patient consent for PHI processing through your cloud platform?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Patient consent for PharmaNet transactions is governed by BC legislation:
+    <ul>
+      <li>Under the <strong>BC Pharmaceutical Services Act</strong>, pharmacists have statutory authority to access PharmaNet for the purpose of dispensing medications and providing pharmaceutical care. Explicit patient consent is not required for each transaction.</li>
+      <li>The <strong>PharmaNet Professional and Software Compliance Standards</strong> require that access is limited to authorized health professionals acting within their scope of practice.</li>
+      <li>Our platform enforces this through the authentication chain &mdash; only authenticated pharmacists/prescribers with valid PharmaNet credentials (embedded in HL7 MSH segments) can submit transactions.</li>
+      <li>Patient consent for broader data processing (e.g., analytics, quality improvement) would require separate consent mechanisms, which are outside the scope of the core PharmaNet messaging platform.</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 5 -->
+<!-- ============================================================ -->
+<h2 id="cat5">Category 5: Resilience, Availability &amp; Operational Readiness</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">20</div>
+    <div class="card-title">What is your SLA commitment and how does the architecture support it?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Our target SLA is <strong>99.9% availability</strong> (8.76 hours downtime/year). The architecture supports this through:
+    <ul>
+      <li><strong>Cloud Run:</strong> Google provides a 99.95% monthly SLA for Cloud Run. Auto-scaling handles traffic spikes. Minimum instances can be configured to eliminate cold starts.</li>
+      <li><strong>Firestore:</strong> 99.999% SLA for multi-region, 99.99% for single-region. Currently single-region; multi-region planned.</li>
+      <li><strong>Pub/Sub:</strong> 99.95% SLA. Push delivery with automatic retries.</li>
+    </ul>
+    <strong>Current gap:</strong> Single-region deployment creates a single point of failure. The multi-region HA enhancement (Phase 3.3) will add Toronto as a DR region with automatic failover via Global HTTPS Load Balancer, achieving the target SLA.
+    <br><br>
+    <strong>Transaction timeout:</strong> The polling model provides ~45 seconds for a transaction to complete. If the timeout is reached, the client receives HTTP 504 and can retry using the <code>/retry</code> endpoint. The inbound request is already persisted and the Pub/Sub message is durable, so the transaction may still complete asynchronously.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">21</div>
+    <div class="card-title">What is the blast radius if Firestore goes down?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Firestore is a critical dependency for both services:
+    <ul>
+      <li><strong>Data Service:</strong> Cannot persist inbound requests or poll for responses. All new transactions fail with 500/504.</li>
+      <li><strong>Enrichment Service:</strong> Can still receive Pub/Sub messages, build HL7, and send to PharmaNet, but cannot persist responses. This means the Data Service polling will never succeed.</li>
+    </ul>
+    <strong>Mitigations (planned):</strong>
+    <ul>
+      <li><strong>Circuit breaker:</strong> Implement Resilience4j circuit breaker around Firestore calls. When open, return a graceful error with retry guidance.</li>
+      <li><strong>Pub/Sub retry:</strong> If the Enrichment Service cannot write to Firestore, it returns a non-2xx status. Pub/Sub retries the push with exponential backoff, giving Firestore time to recover.</li>
+      <li><strong>Multi-region Firestore:</strong> Moving to multi-region replication eliminates single-region Firestore outage as a risk.</li>
+      <li><strong>Health checks:</strong> Spring Boot Actuator health endpoint will include a Firestore connectivity check, enabling Cloud Run to route traffic away from unhealthy instances.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">22</div>
+    <div class="card-title">What is your dead letter queue strategy for Pub/Sub?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No dead letter queue configured. Failed messages are retried indefinitely by Pub/Sub until message retention expires.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> A dead letter topic (<code>dis-bc-request-dlq</code>) will be configured on the <code>dis-bc-request-sub</code> subscription:
+    <ul>
+      <li><strong>Max delivery attempts:</strong> 5 retries before routing to DLQ</li>
+      <li><strong>DLQ monitoring:</strong> Cloud Monitoring alert when DLQ message count &gt; 0</li>
+      <li><strong>DLQ consumer:</strong> A lightweight Cloud Function or manual process to inspect, fix, and republish failed messages</li>
+      <li><strong>DLQ retention:</strong> 7 days, giving operations time to investigate</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">23</div>
+    <div class="card-title">How do you handle poison messages?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> A poison message (malformed JSON that consistently crashes the Enrichment Service) is handled through:
+    <ol>
+      <li><strong>Input validation:</strong> The Enrichment Service validates JSON structure before processing. Malformed messages return HTTP 400 (bad request), which Pub/Sub treats as a permanent failure after max retries.</li>
+      <li><strong>Dead letter queue:</strong> After 5 failed delivery attempts, poison messages route to the DLQ for manual inspection.</li>
+      <li><strong>Exception handling:</strong> The push handler catches all exceptions and returns appropriate HTTP status codes. Unrecoverable errors (bad JSON, unknown eventTypeCode) return 2xx to ACK the message and prevent infinite retries, while logging the error for investigation.</li>
+      <li><strong>Alerting:</strong> Spike in 400/500 responses from the Enrichment Service triggers a Cloud Monitoring alert.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">24</div>
+    <div class="card-title">What are your capacity limits? Have you load tested?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No load testing has been conducted.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Known capacity characteristics:
+    <ul>
+      <li><strong>Cloud Run:</strong> Auto-scales to 100 instances (default). Each instance handles concurrent requests (configurable concurrency).</li>
+      <li><strong>Firestore:</strong> 10,000 writes/second per database. 1 write/second per document (not a concern since each transaction uses a unique messageId).</li>
+      <li><strong>Pub/Sub:</strong> Effectively unlimited throughput for our scale.</li>
+      <li><strong>Bottleneck:</strong> The polling model creates up to 226 Firestore reads per transaction. At 100 concurrent transactions, that is 22,600 reads in a ~45-second window.</li>
+    </ul>
+    <strong>Planned:</strong> Load testing using <strong>Cloud Run load testing tools</strong> or <strong>Locust</strong> to validate throughput, identify the actual bottleneck, and set appropriate Cloud Run concurrency and min-instance settings. Target: handle peak pharmacy hours (estimated 50&ndash;100 concurrent transactions) with P95 latency under 10 seconds.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 6 -->
+<!-- ============================================================ -->
+<h2 id="cat6">Category 6: Supply Chain &amp; Dependency Security</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">25</div>
+    <div class="card-title">What is your Software Bill of Materials (SBOM)?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No SBOM is generated for any service.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> SBOMs will be generated for every build using <code>cyclonedx-maven-plugin</code>:
+    <ul>
+      <li>Format: CycloneDX JSON (industry standard for SBOM)</li>
+      <li>Generated during <code>mvn package</code> phase</li>
+      <li>Stored alongside container images in Artifact Registry</li>
+      <li>Includes all direct and transitive dependencies with versions and licenses</li>
+      <li>Integrated with <strong>GCP Artifact Analysis</strong> for automated vulnerability scanning of the SBOM</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">26</div>
+    <div class="card-title">How do you manage dependency vulnerabilities?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No automated dependency vulnerability scanning. No Dependabot, Snyk, or OWASP Dependency-Check configured.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> Multi-layered dependency security:
+    <ol>
+      <li><strong>OWASP Dependency-Check Maven plugin:</strong> Runs during CI build; fails on HIGH/CRITICAL CVEs</li>
+      <li><strong>GCP Artifact Registry vulnerability scanning:</strong> Automatically scans container images for known vulnerabilities</li>
+      <li><strong>Dependabot or Renovate:</strong> Automated PRs for dependency updates (if using GitHub/GitLab)</li>
+      <li><strong>Quarterly manual review:</strong> Review and update all dependencies to latest stable versions</li>
+    </ol>
+    Implementation: Part of Phase 3.2 (CI/CD pipeline with security scanning).
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">27</div>
+    <div class="card-title">Your Docker images use eclipse-temurin:23-jre. How often are base images rebuilt?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> Currently, base images are only updated during manual deployments. The target state CI/CD pipeline will:
+    <ul>
+      <li>Use a <strong>pinned digest</strong> for the base image (not just the tag) for reproducibility</li>
+      <li>Run a <strong>weekly scheduled build</strong> that rebuilds all container images with the latest base image patches</li>
+      <li>Scan the rebuilt images for vulnerabilities before promoting to production</li>
+      <li>Eclipse Temurin publishes quarterly CPU updates and critical patches as needed &mdash; our weekly rebuild cadence ensures we pick these up promptly</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">28</div>
+    <div class="card-title">Who has access to deploy to Cloud Run? Is there separation of duties?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> <code>deploy.sh</code> runs from a developer&rsquo;s laptop using personal GCP credentials. No CI/CD pipeline, no approval gates, no audit trail of deployments.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> Deployment will be controlled through a CI/CD pipeline with separation of duties:
+    <ul>
+      <li><strong>Developers:</strong> Can push code to feature branches, create PRs. Cannot deploy to production.</li>
+      <li><strong>CI/CD Pipeline (Cloud Build):</strong> Automated build, test, scan, and deploy. Triggered by merge to main branch. Uses a dedicated Cloud Build service account with minimal IAM roles.</li>
+      <li><strong>Production deployment:</strong> Requires PR approval from at least one reviewer + passing CI checks (unit tests, SAST, container scan).</li>
+      <li><strong>Audit trail:</strong> Cloud Audit Logs capture every <code>gcloud run deploy</code> invocation with caller identity and timestamp.</li>
+      <li><strong>Emergency deploys:</strong> Documented break-glass procedure requiring post-incident review.</li>
+    </ul>
+    Implementation: Phase 3.2 (1 day).
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 7 -->
+<!-- ============================================================ -->
+<h2 id="cat7">Category 7: Regulatory &amp; Compliance Specifics</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">29</div>
+    <div class="card-title">Show me your PharmaNet conformance certification.</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> PharmaNet Software Conformance certification is a mandatory requirement for production access to the PharmaNet system. The certification process, administered by the <strong>BC Ministry of Health</strong>, requires:
+    <ul>
+      <li>Submission of a completed PharmaNet software conformance application</li>
+      <li>Demonstration that all mandatory PharmaNet transactions are correctly implemented (our platform supports all 12 mandatory + 12 optional transaction types)</li>
+      <li>Passing conformance tests for HL7 message formatting, segment construction, and response handling</li>
+      <li>Review of security controls and privacy safeguards</li>
+    </ul>
+    <strong>Current status:</strong> The platform is in development/testing phase using the <code>SIMULATED</code> PharmaNet endpoint. Conformance certification will be pursued once security hardening is complete. The certification timeline is typically 4&ndash;8 weeks after submission, and is factored into the compliance phase of our roadmap.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">30</div>
+    <div class="card-title">Are you compliant with the BC Pharmaceutical Services Act and Drug Plans Regulation?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The BC Pharmaceutical Services Act and Drug Plans Regulation establish rules for:
+    <ul>
+      <li><strong>Who can access PharmaNet:</strong> Only authorized pharmacists, prescribers, and pharmacy technicians acting within their scope of practice. Our authentication model (target state) will enforce this through role-based access derived from IdP claims.</li>
+      <li><strong>Audit requirements:</strong> All PharmaNet transactions must be auditable. Our Firestore <code>dis-bc-inbound-requests</code> collection provides an audit trail of every submitted transaction with timestamps and user identity (once authentication is implemented).</li>
+      <li><strong>Software certification:</strong> PharmaNet software must be certified by the Ministry of Health (see Q29).</li>
+    </ul>
+    Full compliance will require the authentication/authorization layer (Phase 1) to be in place to enforce role-based access controls.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">31</div>
+    <div class="card-title">Where is your Privacy Impact Assessment (PIA)?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No PIA has been conducted or submitted.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> A Privacy Impact Assessment (PIA) is required by the <strong>BC Freedom of Information and Protection of Privacy Act (FIPPA)</strong> before any new system processes personal health information. The PIA will:
+    <ul>
+      <li>Describe the personal information collected, used, and disclosed</li>
+      <li>Identify the legal authority for collection</li>
+      <li>Assess privacy risks and mitigation measures</li>
+      <li>Document data flows, storage locations, and access controls</li>
+      <li>Be reviewed by the organization&rsquo;s Privacy Officer</li>
+      <li>Be submitted to the <strong>BC OIPC</strong> for review</li>
+    </ul>
+    The PIA will be prepared as part of Phase 4.1 (compliance documentation, 4 days). The architecture documentation and data flow diagrams produced in this review provide the technical foundation for the PIA.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">32</div>
+    <div class="card-title">Do you have a designated Privacy Officer and Security Officer?</div>
+  </div>
+  <span class="badge badge-high">High Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> A designated <strong>Privacy Officer</strong> and <strong>Information Security Officer</strong> will be formally appointed. These roles are required by:
+    <ul>
+      <li>BC FIPPA &mdash; requires a designated head responsible for privacy compliance</li>
+      <li>PIPEDA &mdash; requires an individual accountable for privacy compliance</li>
+      <li>SOC 2 &mdash; requires defined security governance roles</li>
+    </ul>
+    Responsibilities include: privacy impact assessments, breach notification management, access control policy enforcement, security incident response, and regulatory liaison. In a small team, one person may hold both roles initially, with a plan to separate as the organization grows.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">33</div>
+    <div class="card-title">How do you handle breach notification?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No incident response plan or breach notification process exists.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> A breach notification process will be documented as part of the Incident Response Policy (Phase 4.4):
+    <ul>
+      <li><strong>PIPEDA:</strong> Mandatory notification to the Privacy Commissioner of Canada and affected individuals &ldquo;as soon as feasible&rdquo; for breaches involving real risk of significant harm.</li>
+      <li><strong>BC FIPPA:</strong> Notification to the BC OIPC as required.</li>
+      <li><strong>Internal timeline:</strong> Detection &rarr; Containment (within 4 hours) &rarr; Assessment (within 24 hours) &rarr; Notification (within 72 hours if required) &rarr; Remediation &rarr; Post-incident review.</li>
+      <li><strong>Technical enablers:</strong> Cloud Monitoring alerts for anomalous access patterns, Cloud Audit Logs for forensics, documented escalation contacts and communication templates.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">34</div>
+    <div class="card-title">Show me your access control policy for PharmaNet transactions. How do you differentiate user roles?</div>
+  </div>
+  <span class="badge badge-critical">Critical Gap</span>
+  <div class="gap-box">
+    <strong>Current State:</strong> No role differentiation exists. Any caller can submit any PharmaNet transaction type.
+  </div>
+  <div class="answer-box">
+    <strong>Suggested Answer (Target State):</strong> Role-based access control will enforce PharmaNet access rules:
+    <table>
+      <tr><th>Role</th><th>Allowed Transactions</th><th>Source</th></tr>
+      <tr><td>Pharmacist</td><td>All mandatory + optional transactions</td><td>IdP role claim</td></tr>
+      <tr><td>Pharmacy Technician</td><td>Dispensing, profile lookups, patient ID (limited set)</td><td>IdP role claim</td></tr>
+      <tr><td>Prescriber</td><td>Prescriber ID, patient demographics, Rx retrieval</td><td>IdP role claim</td></tr>
+      <tr><td>System Admin</td><td>No PharmaNet transactions; monitoring and configuration only</td><td>IdP role claim</td></tr>
+    </table>
+    Enforcement: Spring Security on the Data Service will inspect JWT claims and validate the user&rsquo;s role against the <code>eventTypeCode</code> of the submitted transaction. Unauthorized attempts will be rejected with HTTP 403 and logged as security events.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CATEGORY 8 -->
+<!-- ============================================================ -->
+<h2 id="cat8">Category 8: Architecture Patterns &amp; Design</h2>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">35</div>
+    <div class="card-title">Why synchronous polling instead of webhooks or real-time listeners?</div>
+  </div>
+  <span class="badge badge-low">Design Debt</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The polling model was chosen for simplicity and reliability:
+    <ul>
+      <li><strong>Why not webhooks:</strong> The client needs a synchronous request-response pattern (submit transaction, get response). Webhooks would require the client to maintain a listener endpoint, complicating the architecture.</li>
+      <li><strong>Why not Firestore real-time listeners:</strong> This is a valid optimization. The Data Service could use Firestore&rsquo;s <code>onSnapshot</code> listener instead of polling, reducing Firestore reads from ~226 per transaction to 1&ndash;2. This is a candidate for a future optimization sprint.</li>
+      <li><strong>Current cost:</strong> ~226 reads per transaction at ~$0.06/100K reads = negligible for expected volumes. The operational simplicity of polling outweighs the marginal cost at current scale.</li>
+    </ul>
+    <strong>Planned improvement:</strong> Migrate to Firestore real-time listeners when transaction volumes increase or if Firestore read costs become material.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">36</div>
+    <div class="card-title">Why is the Client Service using WebFlux WebClient in blocking mode (.block())?</div>
+  </div>
+  <span class="badge badge-low">Design Debt</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The Client Service uses <code>spring-boot-starter-webflux</code> solely for the <code>WebClient</code> HTTP client (which replaces the deprecated <code>RestTemplate</code>). The <code>.block()</code> call is intentional because:
+    <ul>
+      <li>The service uses Thymeleaf (a synchronous template engine) which requires a completed response to render views</li>
+      <li>The Client Service is a test/demo application, not a high-throughput production service</li>
+      <li>Thread blocking is acceptable at the expected concurrency level (&lt;10 concurrent users)</li>
+    </ul>
+    For the production Careverse Angular app, the Angular <code>HttpClient</code> is inherently asynchronous, so the blocking concern does not apply to the real client path.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">37</div>
+    <div class="card-title">Why three separate repositories instead of a monorepo with shared libraries?</div>
+  </div>
+  <span class="badge badge-low">Design Debt</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The three-repository approach was chosen to support:
+    <ul>
+      <li><strong>Independent deployability:</strong> Each service has its own CI/CD lifecycle. Changes to the Enrichment Service (e.g., adding a new HL7 builder) can be deployed without touching the Data Service.</li>
+      <li><strong>Team scalability:</strong> As the team grows, different developers can own different services.</li>
+      <li><strong>Technology flexibility:</strong> Services can evolve their dependencies independently (as seen in the Spring Boot version difference).</li>
+    </ul>
+    <strong>Trade-off acknowledged:</strong> Common domain types (Header, Event, Candidate) are duplicated. A <strong>shared domain library</strong> (<code>solis-dis-common</code>) published to a private Maven repository (Artifact Registry) would reduce this duplication. This is a candidate for a future refactoring sprint but is low priority given the current team size.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">38</div>
+    <div class="card-title">The Data Service is on Spring Boot 3.5.13 and Client Service on 3.2.5. Why the version mismatch?</div>
+  </div>
+  <span class="badge badge-medium">Medium Risk</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The version difference is historical &mdash; the Client Service was created earlier and has not been updated to match. This creates:
+    <ul>
+      <li><strong>CVE risk:</strong> Spring Boot 3.2.5 may have known vulnerabilities patched in 3.5.x</li>
+      <li><strong>Testing complexity:</strong> Different Spring behavior across services</li>
+    </ul>
+    <strong>Remediation:</strong> All services will be aligned to the same Spring Boot version (latest stable 3.5.x) during the CI/CD pipeline setup (Phase 3.2). The CI pipeline will enforce version consistency checks.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-number">39</div>
+    <div class="card-title">Why is the Enrichment Service both a message processor AND a PharmaNet client? Should those be separate?</div>
+  </div>
+  <span class="badge badge-low">Design Debt</span>
+  <div class="answer-box">
+    <strong>Suggested Answer:</strong> The Enrichment Service combines three responsibilities: (1) Pub/Sub message intake, (2) HL7 message construction, and (3) PharmaNet HTTP communication. This was a pragmatic choice:
+    <ul>
+      <li><strong>Latency:</strong> Separating message building from sending would add an extra network hop, increasing transaction latency in a time-sensitive pharmacy workflow.</li>
+      <li><strong>Simplicity:</strong> The current 65+ class count is manageable with clear package separation (<code>hl7.pnet</code>, <code>hl7.mandatory</code>, <code>hl7.optional</code>, <code>hl7.v3</code>, <code>controller</code>, <code>service</code>).</li>
+      <li><strong>Deployment unit:</strong> A single Cloud Run service simplifies infrastructure and reduces cost.</li>
+    </ul>
+    <strong>When to split:</strong> If the service grows beyond ~100 classes, if different scaling profiles are needed for message building vs. PharmaNet communication, or if a different team needs to own the PharmaNet gateway layer independently. Currently not a priority.
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- VERDICT -->
+<!-- ============================================================ -->
+<h2 id="verdict">Architect&rsquo;s Verdict &amp; Risk Summary</h2>
+
+<h3>Findings by Severity</h3>
+
+<table>
+  <tr><th>Severity</th><th>Count</th><th>Questions</th></tr>
+  <tr>
+    <td><span class="badge badge-critical">Critical</span></td>
+    <td><strong>10</strong></td>
+    <td>Q3 (DPIA), Q6 (Auth chain), Q7 (Open endpoints), Q8 (Service-to-service auth), Q9 (Pub/Sub spoofing), Q11 (Threat model), Q13 (Hardcoded secrets), Q17 (PHI in logs), Q28 (Deploy from laptop), Q31 (PIA), Q33 (Breach notification), Q34 (No RBAC)</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-high">High</span></td>
+    <td><strong>11</strong></td>
+    <td>Q2 (Legislation mapping), Q4 (DPA/custodian), Q10 (Session mgmt), Q12 (Payload validation), Q15 (Data classification), Q19 (Consent), Q21 (Firestore blast radius), Q22 (No DLQ), Q23 (Poison messages), Q25 (No SBOM), Q26 (No dependency scanning), Q29 (PharmaNet cert), Q30 (Pharma Act), Q32 (Privacy Officer)</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-medium">Medium</span></td>
+    <td><strong>7</strong></td>
+    <td>Q1 (Data residency proof), Q5 (TTL vs retention), Q14 (Replay attack), Q16 (Encryption layers), Q18 (Data minimization), Q20 (SLA), Q24 (Load testing), Q27 (Base image rebuild), Q38 (Version mismatch)</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-low">Low</span></td>
+    <td><strong>5</strong></td>
+    <td>Q35 (Polling vs listeners), Q36 (Blocking WebClient), Q37 (Monorepo vs multi-repo), Q39 (Service responsibilities)</td>
+  </tr>
+</table>
+
+<h3>Architect&rsquo;s Overall Assessment</h3>
+
+<div class="card" style="border-left: 4px solid var(--accent);">
+  <p><strong>The core business logic is solid.</strong> The platform correctly implements 32 HL7 message types with well-organized builder patterns, proper message correlation via messageId, and a clean three-layer separation. The Pub/Sub push architecture is a good choice for decoupling.</p>
+  <p><strong>However, the platform is NOT ready for production.</strong> The complete absence of authentication, authorization, audit logging, and PHI log protection represents a critical compliance and security risk for a system handling personal health information under Canadian law.</p>
+  <p><strong>Recommendation:</strong> Complete Phases 1 and 2 of the security hardening plan (8 days) before any production deployment or PharmaNet conformance certification submission. Phase 3 (resilience) and Phase 4 (compliance documentation) should follow, with PharmaNet certification initiated after Phase 2 completion.</p>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- ROADMAP -->
+<!-- ============================================================ -->
+<h2 id="roadmap">Remediation Roadmap</h2>
+
+<table>
+  <tr><th>Phase</th><th>Focus</th><th>Duration</th><th>Questions Addressed</th></tr>
+  <tr>
+    <td><strong>Phase 1</strong></td>
+    <td>Endpoint Protection (JWT, OIDC, IAM, CORS)</td>
+    <td>3 days</td>
+    <td>Q6, Q7, Q8, Q9, Q10, Q34</td>
+  </tr>
+  <tr>
+    <td><strong>Phase 2</strong></td>
+    <td>Infrastructure Security (VPC, WAF, Secrets, Monitoring, Audit, Headers, PHI)</td>
+    <td>5 days</td>
+    <td>Q1, Q11, Q12, Q13, Q15, Q16, Q17, Q18, Q22, Q23</td>
+  </tr>
+  <tr>
+    <td><strong>Phase 3</strong></td>
+    <td>Resilience &amp; Automation (Backups, CI/CD, Multi-region)</td>
+    <td>3 days</td>
+    <td>Q5, Q20, Q21, Q24, Q25, Q26, Q27, Q28, Q38</td>
+  </tr>
+  <tr>
+    <td><strong>Phase 4</strong></td>
+    <td>Compliance &amp; Certification (SOC 2, PIA, PharmaNet cert, Policies)</td>
+    <td>16 days</td>
+    <td>Q2, Q3, Q4, Q19, Q29, Q30, Q31, Q32, Q33</td>
+  </tr>
+  <tr>
+    <td colspan="2"><strong>TOTAL ESTIMATED EFFORT</strong></td>
+    <td colspan="2"><strong>27 working days (1 developer + Cursor AI assistance)</strong></td>
+  </tr>
+</table>
+
+<p style="margin-top: 32px; padding: 16px; background: #ebf4ff; border-radius: 8px; border: 1px solid #90cdf4; font-size: 14px;">
+  <strong>Note:</strong> Design debt items (Q35&ndash;Q39) are <em>not</em> blocking production deployment and are tracked as future optimization candidates. They should be addressed during regular sprint planning based on team capacity and business priorities.
+</p>
+
+</div><!-- .container -->
+
+<footer style="background: var(--primary); color: white; text-align: center; padding: 20px; margin-top: 48px; font-size: 13px; opacity: 0.9;">
+  Solis DIS Platform &mdash; Principal Architect Review &mdash; CONFIDENTIAL &mdash; April 2026
+</footer>
+
+</body>
+</html>

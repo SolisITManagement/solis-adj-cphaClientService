@@ -1,0 +1,186 @@
+BC PharmaNet Integration Platform - Architecture Questionnaire Responses
+=========================================================================
+Last updated: April 2026
+
+
+17. What are your existing software systems for application hosting?
+--------------------------------------------------------------------
+- Application Framework: Spring Boot 3.2.5 (Java 21)
+- Web Server: Embedded Apache Tomcat (via Spring Boot)
+- Template Engine: Thymeleaf (Client Application UI)
+- HTTP Client: Spring WebFlux WebClient (Client to Data Service),
+  Java 11+ HttpClient (Enrichment Service to PharmaNet)
+- JSON Processing: Jackson (ObjectMapper, JsonNode)
+- Build Tool: Apache Maven
+- Container Runtime: Docker
+- Database: Google Cloud Firestore (NoSQL document store)
+- Messaging: Google Cloud Pub/Sub (push subscription)
+- Compute: Google Cloud Run (serverless containers)
+- Monitoring: Not yet configured (see Gaps section)
+
+
+18. What is your network infrastructure and capabilities?
+---------------------------------------------------------
+- All services run on Google Cloud Run in region northamerica-northeast1
+  (Montreal, Canada).
+- Inter-service communication is over HTTPS (TLS-encrypted) via Cloud Run
+  managed endpoints.
+- Pub/Sub push subscription delivers over HTTPS to the Enrichment Service.
+- Client Application calls the Data Service over HTTPS.
+- Enrichment Service communicates with PharmaNet over HTTP/HTTPS
+  (configurable endpoint).
+
+Gap: Bandwidth specifics, VPC configuration, firewall rules, private
+networking (VPC connectors, Private Google Access), and network security
+policies are not yet defined. Cloud Run services appear publicly
+accessible. No VPN or dedicated interconnect to PharmaNet is configured.
+
+
+19. What is your cloud hosting solution?
+-----------------------------------------
+- Cloud Provider: Google Cloud Platform (GCP)
+- Project: solis-public
+- Region: northamerica-northeast1 (Montreal, Quebec, Canada)
+- Services used: Cloud Run, Pub/Sub, Firestore, Cloud Build,
+  Artifact Registry
+
+Gap: No cloud certifications (ISO 27017, CSA CCM, NIST 800-53) are
+referenced in the application configuration. GCP itself holds these
+certifications, but the application's compliance posture is not documented.
+
+
+20. How many data centres do you use?
+--------------------------------------
+All services are deployed to a single GCP region: northamerica-northeast1.
+Cloud Run within that region is multi-zonal (managed by GCP), but the
+application does not explicitly configure multi-region or cross-region
+deployment.
+
+Gap: No multi-region failover or disaster recovery configuration exists.
+
+
+21. Where are they located?
+----------------------------
+northamerica-northeast1 = Montreal, Quebec, Canada.
+This is a Canadian data residency region, important for healthcare data
+sovereignty.
+
+
+22. Is the data centre owned or subcontracted?
+-----------------------------------------------
+Subcontracted. All infrastructure is hosted on Google Cloud Platform.
+No owned data centres.
+
+
+23. If outsourced, what is the name of the provider?
+-----------------------------------------------------
+Google Cloud Platform (GCP), operated by Google LLC.
+
+
+24. Are the servers shared or dedicated?
+-----------------------------------------
+- Cloud Run: Shared infrastructure (serverless, multi-tenant). Google
+  manages the underlying VMs.
+- Firestore: Shared (multi-tenant managed service).
+- Pub/Sub: Shared (multi-tenant managed service).
+
+Gap: If dedicated infrastructure is required for compliance, migration to
+GKE with sole-tenant nodes or Compute Engine dedicated hosts would be
+needed.
+
+
+25. Are remote operations provided for the data centres?
+---------------------------------------------------------
+Yes. All operations are remote. Deployment is via gcloud CLI from a local
+machine through Cloud Shell and Cloud Build (deploy.sh script). No
+physical data centre access is required.
+
+
+26. Are the data centres audited and/or certified?
+---------------------------------------------------
+GCP northamerica-northeast1 data centres hold:
+- SOC 1/2/3
+- ISO 27001, 27017, 27018
+- CSA STAR
+- PCI DSS
+- PIPEDA compliance (Canadian privacy)
+
+Gap: The application itself has no audit trail, compliance logging, or
+certification documentation. GCP provides infrastructure-level
+certifications, but application-level security audits are not evidenced.
+
+
+27. How is Customer A prevented from gaining access to Customer B's data?
+--------------------------------------------------------------------------
+The current system operates as a single-tenant test/conformance
+application. There is one GCP project (solis-public), one set of
+Firestore collections, and one Pub/Sub topic.
+
+No role-based access control (RBAC) is implemented. No authentication or
+authorization exists on any endpoint (no Spring Security, no OAuth, no
+API keys). Firestore documents are keyed by messageId with no
+tenant/customer partitioning.
+
+Gap (Critical): If multi-tenancy is required, the architecture needs:
+- Authentication (OAuth2 / OIDC)
+- Authorization (RBAC or ABAC)
+- Tenant-scoped Firestore collections or document-level security rules
+- IAM policies on Cloud Run endpoints
+- Pub/Sub message filtering by tenant
+
+
+28. How redundant is power to the facility?
+--------------------------------------------
+GCP Montreal data centres provide:
+- N+1 redundant power
+- UPS and diesel generator backup
+- Redundant cooling
+
+No application-level configuration affects this.
+
+
+29. What backup and recovery procedures are in place?
+------------------------------------------------------
+- Firestore: GCP managed with automatic replication within the region.
+  No explicit backup policies, point-in-time recovery exports, or
+  disaster recovery procedures are configured.
+- Pub/Sub: Messages are retained for 7 days. If the Enrichment Service
+  is down, messages queue and retry with exponential backoff.
+- Application code: Stored in Git. No CI/CD pipeline is configured;
+  deployment is manual via deploy.sh.
+- Response documents: Have an expireOn TTL field, suggesting they are
+  eventually cleaned up.
+
+Gap (Significant): No automated Firestore backup exports, no cross-region
+replication, no documented RTO/RPO, no disaster recovery runbook.
+
+
+30. Partner compliance concerns?
+---------------------------------
+Partners identified:
+- Google Cloud Platform: Infrastructure (Cloud Run, Firestore, Pub/Sub).
+  GCP holds SOC/ISO/PIPEDA certifications. Standard BAA available.
+- BC PharmaNet (Ministry): HL7 message endpoint. Ministry-operated;
+  compliance is their responsibility.
+
+Gap: No partner compliance documentation, data processing agreements
+(DPAs), or Business Associate Agreements (BAAs) are referenced.
+
+
+=========================================================================
+SUMMARY OF GAPS NOT COVERED IN THE ARCHITECTURE
+=========================================================================
+
+Area                          | Gap                                                    | Severity
+------------------------------|--------------------------------------------------------|---------
+Authentication / Authorization| No auth on any endpoint. No RBAC, OAuth, or API keys.  | Critical
+Multi-tenant Data Isolation   | Single-tenant design. No customer data separation.     | Critical
+Monitoring / Observability    | No dashboards, alerting, APM, or distributed tracing.  | High
+Backup / Disaster Recovery    | No Firestore backup exports, no documented RTO/RPO.    | High
+CI/CD Pipeline                | Manual deployment via shell script. No automated CI/CD. | Medium
+Network Security              | Cloud Run endpoints publicly accessible. No VPC, WAF.   | High
+Audit Logging                 | No application-level audit trail for compliance.        | High
+Multi-region / HA             | Single region only. No failover.                       | Medium
+Compliance Documentation      | No ISO/SOC/PIPEDA docs for the application layer.      | Medium
+Partner Agreements            | No DPAs or BAAs referenced.                            | Medium
+Secrets Management            | PharmaNet credentials appear hardcoded in payload.      | High

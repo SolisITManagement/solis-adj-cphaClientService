@@ -1,0 +1,80 @@
+Security Hardening Plan - DataService & Enrichment Service
+============================================================
+1 developer + Cursor AI assistance
+April 2026
+
+
+PHASE 1: CRITICAL - ENDPOINT PROTECTION (3 days)
+=================================================
+
+| #   | Task                                                        | Estimate |
+|-----|-------------------------------------------------------------|----------|
+| 1.1 | Add Spring Security + JWT token validation to microservices | 1 day    |
+| 1.2 | Add Pub/Sub push OIDC token verification                    | 1 day    |
+| 1.3 | Cloud Run IAM ingress restrictions + CORS policy            | 1 day    |
+
+
+PHASE 2: HIGH PRIORITY - INFRASTRUCTURE SECURITY (5 days)
+==========================================================
+
+| #   | Task                                                                      | Estimate |
+|-----|---------------------------------------------------------------------------|----------|
+| 2.1 | VPC networking + Cloud Armor WAF                                          | 1 day    |
+| 2.2 | Migrate secrets to Google Secret Manager                                  | 1 day    |
+| 2.3 | Cloud Monitoring dashboards, alerting, distributed tracing, health checks | 1 day    |
+| 2.4 | Cloud Audit Logs + application-level audit logging + log sink             | 1 day    |
+| 2.5 | OWASP security headers + PHI log redaction                                | 1 day    |
+
+
+PHASE 3: MEDIUM - RESILIENCE AND AUTOMATION (3 days)
+=====================================================
+
+| #   | Task                                                        | Estimate |
+|-----|-------------------------------------------------------------|----------|
+| 3.1 | Automated database backups + disaster recovery runbook      | 1 day    |
+| 3.2 | CI/CD pipeline with SAST + container vulnerability scanning | 1 day    |
+| 3.3 | Multi-region HA deployment with global load balancer        | 1 day    |
+
+
+PHASE 4: COMPLIANCE AND CERTIFICATION (16 days)
+================================================
+
+| #   | Task                                                                         | Estimate |
+|-----|------------------------------------------------------------------------------|----------|
+| 4.1 | SOC 2, ISO 27001, PIPEDA, ISO 27017 compliance documentation                | 4 days   |
+| 4.2 | Third-party penetration testing + remediation                                | 7 days   |
+| 4.3 | Data Processing Agreement + Business Associate Agreement                     | 2 days   |
+| 4.4 | Security policies (Incident Response, Access Control, Data Classification,   | 3 days   |
+|     | Change Management, Vulnerability Management)                                 |          |
+
+
+SUMMARY BY CATEGORY
+====================
+
+| Category                                                       | Estimate    |
+|----------------------------------------------------------------|-------------|
+| Microservices (code level)                                     | 8 days      |
+| GCP Components (Cloud Run, Pub/Sub, Database, VPC, Monitoring) | 3 days      |
+| CI/CD and Automation                                           | 1 day       |
+| Cyber Security Certification and Compliance                    | 16 days     |
+| TOTAL                                                          | 27 work days|
+
+
+TODO LIST
+=========
+
+[ ] 1.1  Add Spring Security + JWT token validation to microservices (1 day)
+[ ] 1.2  Add Pub/Sub push OIDC token verification (1 day)
+[ ] 1.3  Cloud Run IAM ingress restrictions + CORS policy (1 day)
+[ ] 2.1  VPC networking + Cloud Armor WAF (1 day)
+[ ] 2.2  Migrate secrets to Google Secret Manager (1 day)
+[ ] 2.3  Cloud Monitoring dashboards, alerting, distributed tracing, health checks (1 day)
+[ ] 2.4  Cloud Audit Logs + application-level audit logging + log sink (1 day)
+[ ] 2.5  OWASP security headers + PHI log redaction (1 day)
+[ ] 3.1  Automated database backups + disaster recovery runbook (1 day)
+[ ] 3.2  CI/CD pipeline with SAST + container vulnerability scanning (1 day)
+[ ] 3.3  Multi-region HA deployment with global load balancer (1 day)
+[ ] 4.1  SOC 2, ISO 27001, PIPEDA, ISO 27017 compliance documentation (4 days)
+[ ] 4.2  Third-party penetration testing + remediation (7 days)
+[ ] 4.3  Data Processing Agreement + Business Associate Agreement (2 days)
+[ ] 4.4  Security policies - IR, Access Control, Data Classification, Change Mgmt, Vuln Mgmt (3 days)

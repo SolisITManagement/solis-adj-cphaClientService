@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solis DIS - Enterprise Architecture Q&amp;A</title>
+<style>
+  :root {
+    --primary: #1a365d;
+    --primary-light: #2b6cb0;
+    --accent: #e53e3e;
+    --warning: #dd6b20;
+    --success: #38a169;
+    --info: #3182ce;
+    --bg: #f7fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --text: #2d3748;
+    --text-light: #718096;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 48px 40px;
+  }
+  header h1 { font-size: 30px; font-weight: 700; margin-bottom: 6px; }
+  header .subtitle { font-size: 17px; opacity: 0.9; margin-bottom: 4px; }
+  header .meta { font-size: 13px; opacity: 0.7; margin-top: 12px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 40px; }
+  .toc {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 28px 32px; margin-bottom: 40px;
+  }
+  .toc h2 { font-size: 20px; color: var(--primary); margin-bottom: 16px; border: none; padding: 0; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--primary-light); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  h2 {
+    font-size: 24px; color: var(--primary); margin-top: 48px; margin-bottom: 20px;
+    padding-bottom: 8px; border-bottom: 2px solid var(--primary);
+  }
+  h3 { font-size: 17px; color: var(--primary); margin-top: 24px; margin-bottom: 10px; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin-bottom: 12px; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  code {
+    background: #edf2f7; padding: 1px 6px; border-radius: 4px;
+    font-size: 13px; font-family: 'Fira Code', 'Consolas', monospace;
+  }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 28px 32px; margin-bottom: 24px;
+  }
+  .q-header {
+    display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;
+  }
+  .q-num {
+    background: var(--primary); color: white; width: 36px; height: 36px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+  .q-title { font-size: 17px; font-weight: 700; color: var(--primary); }
+  .section-implemented {
+    background: #f0fff4; border-left: 4px solid var(--success);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 6px 6px 0;
+  }
+  .section-implemented h4 { color: var(--success); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .section-gaps {
+    background: #fff5f5; border-left: 4px solid var(--accent);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 6px 6px 0;
+  }
+  .section-gaps h4 { color: var(--accent); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .section-fill {
+    background: #ebf4ff; border-left: 4px solid var(--info);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 6px 6px 0;
+  }
+  .section-fill h4 { color: var(--info); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .estimate-badge {
+    display: inline-block; background: var(--primary); color: white;
+    padding: 3px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;
+    margin-top: 8px;
+  }
+  .strength-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .strength-strong { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .strength-partial { background: #fffff0; color: #975a16; border: 1px solid #fefcbf; }
+  .strength-gap { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;
+  }
+  th {
+    background: var(--primary); color: white; padding: 10px 14px;
+    text-align: left; font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:nth-child(even) { background: #f7fafc; }
+  .diagram-container {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 24px; margin: 24px 0; overflow-x: auto;
+  }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0;
+  }
+  .summary-stat {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; text-align: center;
+  }
+  .summary-stat .number { font-size: 32px; font-weight: 700; color: var(--primary); }
+  .summary-stat .label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+  @media print { .card { break-inside: avoid; } header { padding: 24px; } }
+  @media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr; } .container { padding: 16px 20px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Enterprise Architecture Q&amp;A</h1>
+  <div class="subtitle">Solis DIS Platform &mdash; BC PharmaNet HL7 Messaging System</div>
+  <div class="subtitle">What We Built &bull; Where the Gaps Are &bull; How to Fill Them</div>
+  <div class="meta">Prepared: April 2026 &nbsp;|&nbsp; Classification: CONFIDENTIAL &nbsp;|&nbsp; Solis / Careverse Engineering</div>
+</header>
+
+<div class="container">
+
+<!-- SUMMARY -->
+<div class="summary-grid">
+  <div class="summary-stat">
+    <div class="number">9</div>
+    <div class="label">Architecture Questions</div>
+  </div>
+  <div class="summary-stat">
+    <div class="number">3</div>
+    <div class="label">Microservices Assessed</div>
+  </div>
+  <div class="summary-stat">
+    <div class="number">~12 days</div>
+    <div class="label">Total Gap Remediation</div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#diagram">Architecture Diagram</a></li>
+    <li><a href="#q1">Q1: API Authentication in Enterprise Architecture</a></li>
+    <li><a href="#q2">Q2: Role of an API Gateway in Secure Architecture</a></li>
+    <li><a href="#q3">Q3: When to Use Asynchronous Communication (Kafka / Pub/Sub)</a></li>
+    <li><a href="#q4">Q4: Orchestration Patterns in Distributed Systems</a></li>
+    <li><a href="#q5">Q5: Caching in Enterprise Applications</a></li>
+    <li><a href="#q6">Q6: Capacity Management</a></li>
+    <li><a href="#q7">Q7: Vertical vs. Horizontal Scaling</a></li>
+    <li><a href="#q8">Q8: Cost Efficiency as an Architectural Concern</a></li>
+    <li><a href="#q9">Q9: Making NFRs Real Instead of Theoretical</a></li>
+    <li><a href="#summary">Gap Summary &amp; Remediation Roadmap</a></li>
+  </ol>
+</div>
+
+<!-- ARCHITECTURE DIAGRAM -->
+<h2 id="diagram">Architecture Diagram</h2>
+<p>The Solis DIS platform follows a three-layer architecture: <strong>Client System</strong> (Careverse Angular + test client), <strong>Orchestration Layer</strong> (Data Service), and <strong>Message Processing Engine</strong> (Enrichment Service). All services run on Google Cloud Platform in the Montreal region.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 1040 920" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+  <!-- Client Zone -->
+  <rect x="20" y="20" width="1000" height="130" rx="10" fill="#ebf4ff" stroke="#90cdf4" stroke-width="1.5"/>
+  <text x="36" y="44" font-size="13" font-weight="600" fill="#2b6cb0">CLIENT SYSTEM (Layer 1)</text>
+  <rect x="60" y="60" width="200" height="68" rx="8" fill="#ffffff" stroke="#3182ce" stroke-width="2"/>
+  <text x="160" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Careverse</text>
+  <text x="160" y="106" text-anchor="middle" font-size="11" fill="#718096">Angular / TypeScript</text>
+  <rect x="340" y="60" width="200" height="68" rx="8" fill="#ffffff" stroke="#3182ce" stroke-width="2"/>
+  <text x="440" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Client Test Service</text>
+  <text x="440" y="106" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.2.5 / Java 21</text>
+  <text x="700" y="82" font-size="11" fill="#718096">Port 9090 / Thymeleaf UI</text>
+  <text x="700" y="102" font-size="11" fill="#718096">19 BC PharmaNet message views</text>
+  <!-- Arrows Client -> Data Service -->
+  <line x1="260" y1="128" x2="260" y2="210" stroke="#3182ce" stroke-width="2" marker-end="url(#ab)"/>
+  <line x1="440" y1="128" x2="440" y2="210" stroke="#3182ce" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="290" y="175" font-size="10" fill="#3182ce">HTTP POST (JSON)</text>
+
+  <!-- Orchestration Zone -->
+  <rect x="20" y="170" width="1000" height="220" rx="10" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1.5"/>
+  <text x="36" y="194" font-size="13" font-weight="600" fill="#276749">ORCHESTRATION LAYER (Layer 2) &mdash; Data Service on Cloud Run</text>
+  <rect x="140" y="210" width="280" height="80" rx="8" fill="#ffffff" stroke="#38a169" stroke-width="2"/>
+  <text x="280" y="236" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Data Service</text>
+  <text x="280" y="254" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.5.13 / Cloud Run</text>
+  <text x="280" y="272" text-anchor="middle" font-size="11" fill="#718096">POST /api/dis/bc/publish</text>
+  <rect x="500" y="210" width="220" height="68" rx="6" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1"/>
+  <text x="610" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#276749">Orchestration Steps:</text>
+  <text x="610" y="250" text-anchor="middle" font-size="11" fill="#2d3748">1. Persist inbound to Firestore</text>
+  <text x="610" y="266" text-anchor="middle" font-size="11" fill="#2d3748">2. Publish to Pub/Sub topic</text>
+  <rect x="760" y="210" width="230" height="68" rx="6" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1"/>
+  <text x="875" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#276749">Response Handling:</text>
+  <text x="875" y="250" text-anchor="middle" font-size="11" fill="#2d3748">3. Poll Firestore (225 retries)</text>
+  <text x="875" y="266" text-anchor="middle" font-size="11" fill="#2d3748">4. Return response to client</text>
+  <rect x="500" y="300" width="490" height="52" rx="6" fill="#ebf4ff" stroke="#90cdf4" stroke-width="1"/>
+  <text x="745" y="322" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Correlation: Header.messageId binds all services end-to-end</text>
+  <text x="745" y="340" text-anchor="middle" font-size="11" fill="#718096">Firestore doc ID = messageId | Pub/Sub attribute = correlationMessageId</text>
+  <!-- Arrow: Data Service -> Pub/Sub -->
+  <line x1="280" y1="290" x2="280" y2="730" stroke="#38a169" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#ag)"/>
+  <text x="196" y="510" font-size="10" fill="#38a169" transform="rotate(-90, 196, 510)">Publish JSON</text>
+
+  <!-- Processing Zone -->
+  <rect x="20" y="410" width="1000" height="250" rx="10" fill="#fff5f5" stroke="#feb2b2" stroke-width="1.5"/>
+  <text x="36" y="434" font-size="13" font-weight="600" fill="#c53030">MESSAGE PROCESSING ENGINE (Layer 3) &mdash; Enrichment Service on Cloud Run</text>
+  <rect x="420" y="450" width="300" height="80" rx="8" fill="#ffffff" stroke="#e53e3e" stroke-width="2"/>
+  <text x="570" y="476" text-anchor="middle" font-size="14" font-weight="700" fill="#1a365d">Enrichment Service</text>
+  <text x="570" y="494" text-anchor="middle" font-size="11" fill="#718096">Spring Boot 3.5.13 / Cloud Run</text>
+  <text x="570" y="512" text-anchor="middle" font-size="11" fill="#718096">POST /api/pharmanet/push-handler</text>
+  <rect x="60" y="460" width="150" height="60" rx="6" fill="#fff5f5" stroke="#feb2b2" stroke-width="1"/>
+  <text x="135" y="484" text-anchor="middle" font-size="11" font-weight="600" fill="#c53030">HL7 v2 Builders</text>
+  <text x="135" y="502" text-anchor="middle" font-size="11" fill="#718096">24 PharmaNet + 41 ADT</text>
+  <rect x="60" y="540" width="150" height="60" rx="6" fill="#fff5f5" stroke="#feb2b2" stroke-width="1"/>
+  <text x="135" y="564" text-anchor="middle" font-size="11" font-weight="600" fill="#c53030">HL7 v3 Builders</text>
+  <text x="135" y="582" text-anchor="middle" font-size="11" fill="#718096">JAXB XML (HCIM)</text>
+  <line x1="420" y1="490" x2="210" y2="490" stroke="#e53e3e" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="420" y1="490" x2="300" y2="570" stroke="#e53e3e" stroke-width="1.5"/>
+  <line x1="300" y1="570" x2="210" y2="570" stroke="#e53e3e" stroke-width="1.5" marker-end="url(#ar)"/>
+  <!-- PharmaNet -->
+  <rect x="780" y="460" width="200" height="64" rx="8" fill="#ffffff" stroke="#805ad5" stroke-width="2"/>
+  <text x="880" y="486" text-anchor="middle" font-size="14" font-weight="700" fill="#553c9a">BC PharmaNet</text>
+  <text x="880" y="504" text-anchor="middle" font-size="11" fill="#718096">HL7 v2/v3 Endpoint</text>
+  <line x1="720" y1="490" x2="780" y2="490" stroke="#805ad5" stroke-width="2" marker-end="url(#ap)"/>
+  <text x="746" y="482" font-size="10" fill="#805ad5">HL7</text>
+  <line x1="780" y1="510" x2="720" y2="510" stroke="#805ad5" stroke-width="2" marker-end="url(#apr)"/>
+  <text x="742" y="526" font-size="10" fill="#805ad5">ACK</text>
+  <line x1="570" y1="530" x2="570" y2="730" stroke="#e53e3e" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#ar)"/>
+  <text x="590" y="640" font-size="10" fill="#e53e3e">Save response</text>
+  <rect x="780" y="540" width="200" height="36" rx="4" fill="#fefcbf" stroke="#d69e2e" stroke-width="1"/>
+  <text x="880" y="564" text-anchor="middle" font-size="11" fill="#975a16">SIMULATED mode for dev/test</text>
+
+  <!-- GCP Managed Services -->
+  <rect x="20" y="680" width="1000" height="220" rx="10" fill="#fffff0" stroke="#fefcbf" stroke-width="1.5"/>
+  <text x="36" y="704" font-size="13" font-weight="600" fill="#975a16">GCP MANAGED SERVICES</text>
+  <rect x="170" y="720" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="280" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Pub/Sub</text>
+  <text x="280" y="766" text-anchor="middle" font-size="11" fill="#718096">Topic: dis-bc-request</text>
+  <text x="280" y="782" text-anchor="middle" font-size="11" fill="#718096">Push subscription</text>
+  <line x1="390" y1="740" x2="520" y2="530" stroke="#d69e2e" stroke-width="2" marker-end="url(#ay)"/>
+  <text x="430" y="625" font-size="10" fill="#d69e2e" transform="rotate(-50, 430, 625)">HTTP Push POST</text>
+  <rect x="450" y="720" width="260" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="580" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Firestore</text>
+  <text x="580" y="766" text-anchor="middle" font-size="11" fill="#718096">dis-bc-inbound-requests</text>
+  <text x="580" y="782" text-anchor="middle" font-size="11" fill="#718096">dis-bc-responses</text>
+  <rect x="770" y="720" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="880" y="748" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Build</text>
+  <text x="880" y="766" text-anchor="middle" font-size="11" fill="#718096">Artifact Registry</text>
+  <text x="880" y="782" text-anchor="middle" font-size="11" fill="#718096">Container images</text>
+  <rect x="170" y="810" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="280" y="838" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">Cloud Logging</text>
+  <text x="280" y="856" text-anchor="middle" font-size="11" fill="#718096">stdout from Cloud Run</text>
+  <text x="280" y="872" text-anchor="middle" font-size="11" fill="#718096">(Target: Monitoring + Trace)</text>
+  <rect x="450" y="810" width="260" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2"/>
+  <text x="580" y="838" text-anchor="middle" font-size="14" font-weight="700" fill="#975a16">GCP Project</text>
+  <text x="580" y="856" text-anchor="middle" font-size="11" fill="#718096">solis-public</text>
+  <text x="580" y="872" text-anchor="middle" font-size="11" fill="#718096">northamerica-northeast1 (Montreal)</text>
+  <rect x="770" y="810" width="220" height="72" rx="8" fill="#ffffff" stroke="#d69e2e" stroke-width="2" stroke-dasharray="4,2"/>
+  <text x="880" y="834" text-anchor="middle" font-size="13" font-weight="700" fill="#975a16">Target State</text>
+  <text x="880" y="852" text-anchor="middle" font-size="11" fill="#718096">VPC + Cloud Armor WAF</text>
+  <text x="880" y="868" text-anchor="middle" font-size="11" fill="#718096">Secret Manager + IAM</text>
+  <text x="880" y="884" text-anchor="middle" font-size="11" fill="#718096">Multi-region (Toronto DR)</text>
+  <defs>
+    <marker id="ab" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#3182ce"/></marker>
+    <marker id="ag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#38a169"/></marker>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#e53e3e"/></marker>
+    <marker id="ay" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#d69e2e"/></marker>
+    <marker id="ap" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#805ad5"/></marker>
+    <marker id="apr" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="#805ad5"/></marker>
+  </defs>
+</svg>
+</div>
+
+<!-- ================================================================== -->
+<!-- Q1 -->
+<!-- ================================================================== -->
+<h2 id="q1">Q1: How Do You Approach API Authentication in Enterprise Architecture?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">1</div>
+    <div>
+      <div class="q-title">API Authentication in Enterprise Architecture</div>
+      <span class="strength-badge strength-gap">Critical Gap</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>GCP Application Default Credentials</strong> &mdash; Both the Data Service (<code>FirestoreConfig.java</code>) and Enrichment Service use <code>GoogleCredentials.getApplicationDefault()</code> to authenticate with Firestore and Pub/Sub. This is infrastructure-level authentication between our code and GCP managed services.</li>
+      <li><strong>Cloud Run IAM (partial)</strong> &mdash; The Enrichment Service&rsquo;s <code>cloudbuild.yaml</code> deploys with <code>--no-allow-unauthenticated</code>, meaning GCP&rsquo;s IAM layer requires a valid identity token to invoke it. This is platform-level auth, not application-level.</li>
+      <li><strong>PharmaNet Credentials in HL7</strong> &mdash; Every HL7 message built by the Enrichment Service includes MSH segment credentials (pharmacy ID, software ID, security token) required by PharmaNet. This authenticates our system to the external PharmaNet endpoint at the HL7 protocol level.</li>
+      <li><strong>Pub/Sub Publisher Identity</strong> &mdash; The Data Service&rsquo;s <code>PublisherService.java</code> authenticates to the Pub/Sub topic using the Cloud Run service account&rsquo;s IAM role (<code>pubsub.publisher</code>). This is automatic and handled by the GCP client library.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Spring Security</strong> &mdash; None of the three services include <code>spring-boot-starter-security</code> in their <code>pom.xml</code>. There is no <code>SecurityFilterChain</code>, no HTTP filter chain, no <code>@PreAuthorize</code> annotations.</li>
+      <li><strong>No JWT / Bearer Token Validation</strong> &mdash; The Data Service&rsquo;s <code>BCPublishController</code> accepts any HTTP POST to <code>/api/dis/bc/publish</code> without checking an <code>Authorization</code> header. There is no token introspection, no JWKS validation, no issuer/audience checks.</li>
+      <li><strong>No OIDC Push Verification</strong> &mdash; The Enrichment Service&rsquo;s <code>PharmaNetMessageController.handlePubSubPush()</code> accepts any HTTP POST to <code>/api/pharmanet/push-handler</code>. It does not verify the OIDC token that Google Pub/Sub attaches to push requests. A spoofed request could inject data.</li>
+      <li><strong>No RBAC</strong> &mdash; There is no concept of user roles. A pharmacist, technician, and unauthorized user would all have the same access to every endpoint and every PharmaNet transaction type.</li>
+      <li><strong>No Service-to-Service Auth</strong> &mdash; The Client Service calls the Data Service with a plain <code>WebClient.post()</code> in <code>CphaClientService.java</code> &mdash; no Bearer token, no API key, no mTLS.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Add <code>spring-boot-starter-oauth2-resource-server</code></strong> to the Data Service and Enrichment Service <code>pom.xml</code> files. Configure a <code>SecurityFilterChain</code> bean with <code>.oauth2ResourceServer(jwt -&gt; jwt.jwkSetUri(...))</code> pointing to the organization&rsquo;s Identity Provider (Azure AD, Okta, or Keycloak).</li>
+      <li><strong>OIDC Push Verification</strong> &mdash; Add a servlet filter on the Enrichment Service that validates the <code>Authorization: Bearer</code> header on push requests against Google&rsquo;s public JWKS endpoint (<code>https://www.googleapis.com/oauth2/v3/certs</code>). Verify <code>iss</code>, <code>aud</code>, and <code>email</code> claims match the configured Pub/Sub push service account.</li>
+      <li><strong>Cloud Run IAM</strong> &mdash; Add <code>--no-allow-unauthenticated</code> and <code>--ingress=internal</code> to ALL <code>deploy.sh</code> / <code>cloudbuild.yaml</code> scripts. This provides defense-in-depth at the GCP platform layer.</li>
+      <li><strong>RBAC</strong> &mdash; Extract user roles from JWT claims and enforce per-endpoint authorization. For example, only <code>PHARMACIST</code> role can submit <code>TAC_TDU</code> (dispense claim) transactions.</li>
+      <li><strong>Service-to-Service</strong> &mdash; Use GCP IAM identity tokens: the Client Service obtains an identity token from the metadata server and passes it as a Bearer token to the Data Service. Cloud Run verifies it automatically when <code>--no-allow-unauthenticated</code> is set.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 3 days (Phase 1 of Security Hardening Plan)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q2 -->
+<!-- ================================================================== -->
+<h2 id="q2">Q2: What Role Does an API Gateway Play in a Secure Architecture?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">2</div>
+    <div>
+      <div class="q-title">API Gateway in Secure Architecture</div>
+      <span class="strength-badge strength-gap">Critical Gap</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>Data Service as Implicit Gateway</strong> &mdash; The Data Service acts as the single entry point for all BC PharmaNet traffic. All client requests go through <code>/api/dis/bc/publish</code>. It validates the required <code>Header.messageId</code>, persists the audit trail, and publishes to the internal Pub/Sub topic. No client directly calls the Enrichment Service &mdash; only Pub/Sub does.</li>
+      <li><strong>Cloud Run Built-in Routing</strong> &mdash; Google Cloud Run provides automatic HTTPS termination, request routing, and basic DDoS protection. Each service gets a stable HTTPS URL with a managed TLS certificate.</li>
+      <li><strong>SpringDoc OpenAPI</strong> &mdash; Both the Data Service and Enrichment Service include <code>springdoc-openapi-starter-webmvc-ui</code> (v2.8.6), providing Swagger UI at <code>/swagger-ui.html</code> and OpenAPI 3 spec at <code>/v3/api-docs</code>. This gives API consumers a self-service discovery interface.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Dedicated API Gateway</strong> &mdash; There is no Spring Cloud Gateway, Kong, Apigee, or any API gateway product. Cloud Run URLs are called directly by clients.</li>
+      <li><strong>No Rate Limiting / Throttling</strong> &mdash; Any caller can send unlimited requests. There is no per-client quota, no burst limit, no concurrency cap at the edge.</li>
+      <li><strong>No WAF / DDoS Protection at the Edge</strong> &mdash; No Cloud Armor WAF policies are attached. No OWASP top-10 rule set, no geo-restriction, no IP allowlisting.</li>
+      <li><strong>No Centralized Auth Token Validation</strong> &mdash; Without a gateway, each service must independently validate tokens. This creates duplication and risk of inconsistency.</li>
+      <li><strong>No API Versioning or Traffic Splitting</strong> &mdash; No ability to route v1 vs. v2 traffic, or do canary deployments at the gateway layer.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Google Cloud Global HTTPS Load Balancer</strong> &mdash; Deploy a Global LB in front of both Cloud Run services. This provides a single stable IP/domain, SSL termination, and request routing to the correct backend service based on URL path.</li>
+      <li><strong>Cloud Armor WAF</strong> &mdash; Attach Cloud Armor security policies to the LB backend services:
+        <ul>
+          <li>OWASP ModSecurity Core Rule Set (CRS) for top-10 protection</li>
+          <li>Rate limiting: max 100 requests/minute per IP</li>
+          <li>Geo-restriction: allow only Canadian IP ranges</li>
+          <li>Custom rules: block requests with payload &gt; 256KB</li>
+        </ul>
+      </li>
+      <li><strong>Optional: Apigee API Management</strong> &mdash; If the platform needs API key management, developer portal, analytics, or per-client quotas, add Apigee as a full API gateway layer. This is a larger investment and may not be needed at current scale.</li>
+      <li><strong>API Versioning</strong> &mdash; Use URL path versioning (<code>/api/v1/dis/...</code>) with LB path-based routing to support rolling upgrades.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 1 day (Phase 2.1 of Security Hardening Plan)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q3 -->
+<!-- ================================================================== -->
+<h2 id="q3">Q3: When Would You Use Asynchronous Communication Such as Kafka or Pub/Sub?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">3</div>
+    <div>
+      <div class="q-title">Asynchronous Communication with Pub/Sub</div>
+      <span class="strength-badge strength-strong">Strongest Area</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <p>This is the most mature architectural pattern in the platform. We chose <strong>Google Cloud Pub/Sub</strong> over Apache Kafka for the following reasons and implemented it as follows:</p>
+    <ul>
+      <li><strong>Why Pub/Sub over Kafka:</strong> Serverless (no broker management), native GCP integration with Cloud Run and IAM, automatic scaling, pay-per-message pricing. Kafka would require provisioning and managing a cluster (or using Confluent Cloud), which is unnecessary for our message volumes.</li>
+      <li><strong>Topic:</strong> <code>dis-bc-request</code> in GCP project <code>solis-public</code></li>
+      <li><strong>Subscription:</strong> <code>dis-bc-request-sub</code> configured for <strong>push delivery</strong> to the Enrichment Service at <code>/api/pharmanet/push-handler</code></li>
+      <li><strong>Publishing:</strong> <code>PublisherService.java</code> in the Data Service creates a <code>PubsubMessage</code> with UTF-8 JSON data and a <code>correlationMessageId</code> attribute (set to <code>Header.messageId</code>). This attribute enables end-to-end tracing.</li>
+      <li><strong>Push Handler:</strong> <code>PharmaNetMessageController.handlePubSubPush()</code> in the Enrichment Service decodes the Base64 push envelope, extracts the JSON payload, and routes to the correct HL7 builder.</li>
+      <li><strong>Stale Message Rejection:</strong> Messages older than 120 seconds (based on <code>publishTime</code>) are ACK&rsquo;d with HTTP 204 without processing. This prevents stale backlog from overwhelming the system.</li>
+      <li><strong>At-Least-Once + Idempotency:</strong> Pub/Sub guarantees at-least-once delivery. Idempotency is achieved through Firestore document ID = <code>messageId</code>. Duplicate deliveries overwrite the same document.</li>
+      <li><strong>Decoupling:</strong> The Data Service and Enrichment Service have zero compile-time dependencies on each other. They communicate only through the Pub/Sub topic and Firestore collections. Either can be redeployed independently.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Dead Letter Queue (DLQ)</strong> &mdash; If the Enrichment Service persistently fails to process a message (returns non-2xx), Pub/Sub retries indefinitely until the message&rsquo;s retention period expires (default 7 days). There is no mechanism to capture and inspect failed messages.</li>
+      <li><strong>No Poison Message Handling</strong> &mdash; A malformed JSON payload that crashes the Enrichment Service will be retried forever by Pub/Sub, consuming resources without resolution.</li>
+      <li><strong>No Pub/Sub Monitoring Alerts</strong> &mdash; No Cloud Monitoring alert for subscription backlog growth, delivery failure rate, or push latency.</li>
+      <li><strong>No OIDC Token Verification</strong> &mdash; The push handler does not verify that the incoming POST is genuinely from Google Pub/Sub (covered in Q1).</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Dead Letter Queue</strong> &mdash; Create topic <code>dis-bc-request-dlq</code> and configure the subscription with <code>--dead-letter-topic</code> and <code>--max-delivery-attempts=5</code>. After 5 failed deliveries, messages route to the DLQ for inspection.</li>
+      <li><strong>Poison Message Safety</strong> &mdash; In the Enrichment Service push handler, wrap all processing in a try/catch. For unrecoverable errors (invalid JSON, unknown <code>eventTypeCode</code>), return HTTP 200 to ACK the message (preventing infinite retry) and log the error at WARN level for investigation.</li>
+      <li><strong>Monitoring</strong> &mdash; Create Cloud Monitoring alerts:
+        <ul>
+          <li>Subscription unacked messages &gt; 50 for 5 minutes</li>
+          <li>DLQ message count &gt; 0</li>
+          <li>Push delivery latency P95 &gt; 30 seconds</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="estimate-badge">Estimated: 1 day (Phase 2.3 of Security Hardening Plan)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q4 -->
+<!-- ================================================================== -->
+<h2 id="q4">Q4: How Do You Approach Orchestration Patterns in Distributed Systems?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">4</div>
+    <div>
+      <div class="q-title">Orchestration Patterns in Distributed Systems</div>
+      <span class="strength-badge strength-partial">Partially Implemented</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>Choreography Pattern via Pub/Sub</strong> &mdash; The Data Service publishes an event to <code>dis-bc-request</code>. The Enrichment Service reacts to it independently. Neither service knows the other exists &mdash; they communicate through the shared topic and Firestore collections. This is the classic choreography pattern where each service owns its behavior.</li>
+      <li><strong>Lightweight In-Process Orchestration</strong> &mdash; The Data Service&rsquo;s <code>PharmanetPublishOrchestrator</code> implements a sequential workflow:
+        <ol>
+          <li>Load message bundle template (<code>PharmanetMessageBundleLoader</code>)</li>
+          <li>Deep-copy and inject <code>messageId</code> (<code>PharmanetPublishMessagePreparer</code>)</li>
+          <li>Persist to Firestore (<code>FirestorePharmanetInboundPersistence</code>)</li>
+          <li>Publish to Pub/Sub (<code>BcRequestPublisher</code>)</li>
+          <li>Poll for response (<code>BcResponseFetcher</code>)</li>
+        </ol>
+        Each step is a separate class with a single responsibility, composed together in the orchestrator.
+      </li>
+      <li><strong>Correlation-Based Request/Response</strong> &mdash; The <code>Header.messageId</code> (generated by <code>BCPayloadBuilder.generateRandomId()</code> using <code>SecureRandom</code>) flows through the entire chain: Client &rarr; Data Service &rarr; Pub/Sub attribute &rarr; Enrichment Service &rarr; Firestore document ID. The Data Service polls Firestore by this ID to correlate the asynchronous response.</li>
+      <li><strong>Builder Routing via Map Lookup</strong> &mdash; The Enrichment Service&rsquo;s <code>PharmanetEventService</code> uses three <code>@Qualifier</code>-injected maps (<code>mandatoryPnetBuilderMap</code>, <code>optionalPnetBuilderMap</code>, <code>adtBuilderMap</code>) to route each <code>eventTypeCode</code> to the correct HL7 builder. This is a strategy/router pattern that decouples message intake from message construction.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Saga / Compensation Pattern</strong> &mdash; If step 4 (Pub/Sub publish) succeeds but step 3 (Firestore persist) failed, there is no rollback or compensation logic. The message would be on Pub/Sub but the inbound audit trail would be missing. Similarly, if the Enrichment Service processes a message but fails to write the response to Firestore, the Data Service polls forever and returns 504.</li>
+      <li><strong>No Circuit Breaker</strong> &mdash; There is no Resilience4j, Hystrix, or Spring Retry around Firestore calls or PharmaNet HTTP calls. A Firestore outage would cause cascading failures across all in-flight transactions without any graceful degradation.</li>
+      <li><strong>Polling-Based Correlation</strong> &mdash; The Data Service polls Firestore 225 times (200ms intervals, ~45 seconds total) instead of using an event-driven notification. This is simple but resource-intensive.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Add Resilience4j Circuit Breaker</strong> &mdash; Wrap Firestore and PharmaNet calls in circuit breakers. When the circuit opens (e.g., 50% failure rate over 10 calls), immediately return a meaningful error instead of attempting the call. Configure fallback behavior (e.g., queue the request for retry).</li>
+      <li><strong>Compensation Logic</strong> &mdash; In the Data Service orchestrator, if Pub/Sub publish fails after Firestore write, update the inbound document status to <code>PUBLISH_FAILED</code>. A scheduled cleanup process can re-attempt publishing for failed documents. In the Enrichment Service, if Firestore write fails after PharmaNet call, return non-2xx to Pub/Sub so it retries delivery.</li>
+      <li><strong>Future: Firestore Real-Time Listeners</strong> &mdash; Replace the polling loop with Firestore <code>onSnapshot()</code> listener. This would reduce Firestore reads from ~226 to ~2 per transaction and provide instant notification when the response arrives.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 2 days (new work beyond current security plan)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q5 -->
+<!-- ================================================================== -->
+<h2 id="q5">Q5: How Do You Handle Caching in Enterprise Applications?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">5</div>
+    <div>
+      <div class="q-title">Caching in Enterprise Applications</div>
+      <span class="strength-badge strength-partial">Minimal / By Design</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>HL7 Builder Map Initialization (Startup Cache)</strong> &mdash; The Enrichment Service&rsquo;s <code>PharmanetEventService.initBuilderMap()</code> is called once at startup via <code>@Autowired</code>. It merges 3 configuration maps (mandatory, optional, ADT) into in-memory <code>HashMap</code> instances that persist for the lifetime of the application. This is effectively an immutable cache of builder routing logic &mdash; no repeated lookups or re-initialization.</li>
+      <li><strong>Spring <code>@Value</code> Injection (Configuration Cache)</strong> &mdash; All configuration properties (Firestore collection names, Pub/Sub topic IDs, PharmaNet endpoint URLs, timeouts) are injected via <code>@Value</code> at bean creation time. Spring caches these for the bean&rsquo;s lifecycle. There is no per-request property file reading.</li>
+      <li><strong>Design Decision: No Response Caching</strong> &mdash; PharmaNet transactions are <em>real-time, state-changing operations</em> (e.g., dispensing a prescription, recording a claim). Each transaction is unique and must reach PharmaNet for processing. Caching responses would be incorrect and potentially dangerous in a healthcare context &mdash; a cached &ldquo;claim accepted&rdquo; response for a different patient could cause medication errors.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>Firestore Polling Reads (Cost Concern)</strong> &mdash; The Data Service polls <code>dis-bc-responses</code> up to 225 times per transaction. On each poll, it reads the same document (which doesn&rsquo;t exist yet). Once the document appears, it&rsquo;s read once more. The 224 &ldquo;not found&rdquo; reads are wasted. A simple cache of the &ldquo;not found&rdquo; result per <code>messageId</code> wouldn&rsquo;t help (we need to check for new data), but a Firestore real-time listener would eliminate this entirely.</li>
+      <li><strong>No Reference Data Caching</strong> &mdash; If the Careverse Angular app needs drug reference lists, pharmacy location directories, or prescriber lookup data, there is no caching layer for this read-heavy, infrequently-changing data.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Replace Polling with Firestore Listener</strong> &mdash; Use Firestore&rsquo;s <code>document.addSnapshotListener()</code> in the Data Service. This eliminates all polling reads and provides near-instant response notification. Reduces Firestore reads from ~226 to ~2 per transaction.</li>
+      <li><strong>Reference Data Cache (if needed)</strong> &mdash; Add <code>spring-boot-starter-cache</code> with Caffeine as the in-memory provider. Apply <code>@Cacheable</code> to reference data lookups with a 1-hour TTL. For larger datasets or cross-instance consistency, use Google Cloud Memorystore (Redis).</li>
+      <li><strong>HTTP Response Caching Headers</strong> &mdash; For read-only reference endpoints (not PharmaNet transactions), add <code>Cache-Control</code> headers to allow client-side and CDN caching.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 0.5 day for Firestore listener migration; caching layer if needed separately</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q6 -->
+<!-- ================================================================== -->
+<h2 id="q6">Q6: How Do You Approach Capacity Management?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">6</div>
+    <div>
+      <div class="q-title">Capacity Management</div>
+      <span class="strength-badge strength-partial">Partially Implemented</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>Cloud Run Auto-Scaling</strong> &mdash; Both services run on Cloud Run, which automatically scales instances from 0 to max based on incoming request rate. No manual capacity provisioning is needed for compute.</li>
+      <li><strong>Enrichment Service Scaling Bounds</strong> &mdash; The <code>cloudbuild.yaml</code> specifies <code>--min-instances=1</code> (eliminates cold starts) and <code>--max-instances=5</code> (cost cap). Memory and CPU are configured per instance.</li>
+      <li><strong>Firestore Auto-Scaling</strong> &mdash; Firestore is serverless and auto-scales to handle any throughput we can generate. No capacity provisioning required.</li>
+      <li><strong>Pub/Sub Auto-Scaling</strong> &mdash; Pub/Sub is fully managed and handles any message throughput. Push delivery automatically adjusts to the consumer&rsquo;s capacity.</li>
+      <li><strong>Timeout-Based Backpressure</strong> &mdash; The Data Service&rsquo;s 45-second polling timeout and the Enrichment Service&rsquo;s 120-second message staleness check provide implicit backpressure. Transactions that can&rsquo;t complete in time fail gracefully with HTTP 504.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>Data Service has no scaling configuration</strong> &mdash; The <code>deploy.sh</code> script has no <code>--min-instances</code>, <code>--max-instances</code>, or <code>--concurrency</code> flags. Cloud Run defaults apply (0 min, 100 max, 80 concurrency), which may not be optimal.</li>
+      <li><strong>No Load Testing</strong> &mdash; No load test has been performed. The theoretical bottleneck (Firestore polling at scale) has not been validated empirically.</li>
+      <li><strong>No Capacity Monitoring Dashboard</strong> &mdash; No Cloud Monitoring dashboard tracks Cloud Run instance count, request latency, Firestore operations/second, or Pub/Sub backlog.</li>
+      <li><strong>No Concurrency Tuning</strong> &mdash; The default Cloud Run concurrency of 80 requests per instance may be too high for the Data Service, where each request holds a thread for ~45 seconds during polling.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Data Service Scaling Config</strong> &mdash; Add <code>--min-instances=1 --max-instances=10 --concurrency=20</code> to <code>deploy.sh</code>. The low concurrency (20 vs. default 80) accounts for the long-polling behavior &mdash; each request occupies a thread for up to 45 seconds.</li>
+      <li><strong>Load Testing</strong> &mdash; Run a load test with <strong>Locust</strong> or <strong>k6</strong>: simulate 100 concurrent PharmaNet transactions, measure P50/P95/P99 latency, Firestore read throughput, and Cloud Run scaling behavior. Document the results as a baseline.</li>
+      <li><strong>Capacity Dashboard</strong> &mdash; Create Cloud Monitoring dashboard with:
+        <ul>
+          <li>Cloud Run: instance count, request count, request latency, CPU/memory utilization</li>
+          <li>Firestore: read/write ops per second, latency</li>
+          <li>Pub/Sub: unacked messages, push delivery latency</li>
+        </ul>
+      </li>
+      <li><strong>Alerting</strong> &mdash; Alert when Cloud Run max instances &gt; 80% capacity or Pub/Sub backlog exceeds 100 messages.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 1 day (Phase 2.3 of Security Hardening Plan)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q7 -->
+<!-- ================================================================== -->
+<h2 id="q7">Q7: What Is the Difference Between Vertical and Horizontal Scaling?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">7</div>
+    <div>
+      <div class="q-title">Vertical vs. Horizontal Scaling</div>
+      <span class="strength-badge strength-partial">Partially Implemented</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <p>Our architecture inherently supports both scaling dimensions through Cloud Run:</p>
+    <ul>
+      <li><strong>Horizontal Scaling (adding more instances)</strong> &mdash; Cloud Run auto-scales from <code>min-instances</code> to <code>max-instances</code> based on incoming traffic. Each instance is a stateless container. The Enrichment Service scales from 1 to 5 instances (per <code>cloudbuild.yaml</code>). This is the primary scaling mechanism.</li>
+      <li><strong>Vertical Scaling (bigger instances)</strong> &mdash; The Enrichment Service configures <code>--memory</code> and <code>--cpu</code> per instance in <code>cloudbuild.yaml</code>. This controls how much resource each individual container gets.</li>
+      <li><strong>Stateless Design Enables Horizontal Scaling</strong> &mdash; All three services are stateless &mdash; no in-memory sessions, no local file state, no sticky sessions. State lives in Firestore (durable) and Pub/Sub (transient). Any instance can handle any request, enabling seamless horizontal scaling.</li>
+      <li><strong>Serverless Data Layer</strong> &mdash; Firestore and Pub/Sub scale independently of the application tier. There is no manual sharding, partitioning, or replica management.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Documented Scaling Strategy</strong> &mdash; There is no written policy on when to scale vertically (increase memory/CPU per instance) vs. horizontally (increase max instances). Engineering decisions are ad hoc.</li>
+      <li><strong>Concurrency Not Tuned</strong> &mdash; Cloud Run&rsquo;s <code>--concurrency</code> setting determines how many concurrent requests a single instance handles. This directly affects whether we need horizontal scale (more instances) or can handle more with existing ones (higher concurrency). Currently untuned.</li>
+      <li><strong>No Auto-Scaling Policies Beyond Cloud Run Defaults</strong> &mdash; Cloud Run scales based on request concurrency. There is no CPU-based or custom-metric-based scaling.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Document Scaling Decision Framework:</strong>
+        <ul>
+          <li><em>Scale horizontally</em> (more instances) when throughput exceeds what a single instance can handle at acceptable latency. This is the default and preferred approach for Cloud Run.</li>
+          <li><em>Scale vertically</em> (more memory/CPU) when a single request needs more resources &mdash; e.g., if HL7 v3 JAXB marshalling of large payloads causes OOM, increase <code>--memory</code>. Or if CPU-bound HL7 building becomes a bottleneck within a single request, increase <code>--cpu</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Tune Concurrency</strong> &mdash; Based on load test results (Q6), set <code>--concurrency</code> for each service. Data Service needs low concurrency (long-polling), Enrichment Service can handle higher concurrency (quick per-request processing).</li>
+    </ol>
+    <div class="estimate-badge">Estimated: Included in load testing effort (Q6)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q8 -->
+<!-- ================================================================== -->
+<h2 id="q8">Q8: How Do You Approach Cost Efficiency as an Architectural Concern?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">8</div>
+    <div>
+      <div class="q-title">Cost Efficiency as Architectural Concern</div>
+      <span class="strength-badge strength-partial">Partially Implemented</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <ul>
+      <li><strong>Serverless = Pay Per Use</strong> &mdash; The entire architecture is serverless:
+        <ul>
+          <li><strong>Cloud Run:</strong> Billed per request and per vCPU-second/GiB-second of container time. Zero traffic = near-zero cost (when <code>min-instances=0</code>).</li>
+          <li><strong>Firestore:</strong> Billed per document read/write/delete. No provisioned throughput.</li>
+          <li><strong>Pub/Sub:</strong> Billed per message published/delivered. Negligible cost at current volumes.</li>
+        </ul>
+      </li>
+      <li><strong>No Managed VMs or Kubernetes</strong> &mdash; We chose Cloud Run over GKE specifically for cost efficiency. There is no cluster management overhead, no idle node cost, no master node fees. Cloud Run auto-scales to zero.</li>
+      <li><strong>Single Region</strong> &mdash; Running in one region (Montreal) minimizes data egress costs and avoids the 2-3x cost multiplier of multi-region Firestore.</li>
+      <li><strong>Document TTL</strong> &mdash; Firestore documents expire after 30 days (application-managed <code>expireOn</code> field), preventing unbounded storage growth.</li>
+      <li><strong>SIMULATED Mode</strong> &mdash; The Enrichment Service supports <code>pharmanet.endpoint=SIMULATED</code> for development and testing, avoiding costs and dependencies on the real PharmaNet endpoint.</li>
+    </ul>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>Polling Reads (Firestore Cost Multiplier)</strong> &mdash; Each transaction generates ~226 Firestore reads (polling loop). At $0.06/100K reads, this is ~$0.000136 per transaction. At 10,000 transactions/day, that is $1.36/day in polling reads alone. Switching to real-time listeners would reduce this by ~99%.</li>
+      <li><strong>Always-On Enrichment Service</strong> &mdash; <code>min-instances=1</code> means the Enrichment Service always has one container running, even during zero-traffic periods. This costs approximately $0.05/hour or ~$36/month for an idle container.</li>
+      <li><strong>No GCP Budget Alerts</strong> &mdash; No budget has been configured in GCP Billing. There is no alert if costs exceed expected thresholds.</li>
+      <li><strong>No Firestore Native TTL</strong> &mdash; The <code>expireOn</code> field exists but Firestore&rsquo;s native TTL policy is not enabled. Without it, expired documents remain until a manual cleanup process runs.</li>
+      <li><strong>No Cost Attribution</strong> &mdash; No resource labeling for cost allocation per service, per environment, or per message type.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <ol>
+      <li><strong>Replace Polling with Firestore Listener</strong> &mdash; Reduces Firestore read costs by ~99%. The single biggest cost optimization available.</li>
+      <li><strong>Enable Firestore Native TTL</strong> &mdash; Run: <code>gcloud firestore fields ttls update expireOn --collection-group=dis-bc-responses --enable-ttl</code>. Firestore automatically deletes expired documents, eliminating the need for a cleanup process and reducing storage costs.</li>
+      <li><strong>GCP Budget Alerts</strong> &mdash; Set up in Cloud Billing:
+        <ul>
+          <li>Alert at 50%, 80%, and 100% of monthly budget</li>
+          <li>Notifications to email and Pub/Sub for automated response</li>
+        </ul>
+      </li>
+      <li><strong>Resource Labels</strong> &mdash; Add labels to Cloud Run services (<code>service=dataservice</code>, <code>env=prod</code>), Firestore, and Pub/Sub resources for cost breakdown in billing reports.</li>
+      <li><strong>Evaluate <code>min-instances=0</code></strong> &mdash; For non-production environments, set <code>min-instances=0</code> to eliminate idle costs. Accept cold-start latency (~2-5s) in dev/staging.</li>
+    </ol>
+    <div class="estimate-badge">Estimated: 1 day for budget alerts + Firestore TTL; 2 days for polling replacement</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- Q9 -->
+<!-- ================================================================== -->
+<h2 id="q9">Q9: How Do You Make NFRs Real Instead of Theoretical?</h2>
+
+<div class="card">
+  <div class="q-header">
+    <div class="q-num">9</div>
+    <div>
+      <div class="q-title">Making Non-Functional Requirements Real</div>
+      <span class="strength-badge strength-partial">Partially Implemented</span>
+    </div>
+  </div>
+
+  <div class="section-implemented">
+    <h4>What We Built</h4>
+    <p>Several NFRs are enforced in code today, not just documented:</p>
+    <table>
+      <tr><th>NFR Category</th><th>Implementation</th><th>Where in Code</th></tr>
+      <tr>
+        <td><strong>Reliability</strong></td>
+        <td>Pub/Sub message staleness check &mdash; rejects messages older than 120 seconds</td>
+        <td><code>PharmaNetMessageController.handlePubSubPush()</code> checks <code>publishTime + timeout.seconds</code></td>
+      </tr>
+      <tr>
+        <td><strong>Data Retention</strong></td>
+        <td>Firestore documents expire after 30 days via application-managed TTL</td>
+        <td><code>FirestoreService.saveResponse()</code> sets <code>expireOn = now + db.expire-in-days</code></td>
+      </tr>
+      <tr>
+        <td><strong>Latency SLA</strong></td>
+        <td>Transaction timeout: 45 seconds (225 retries x 200ms polling interval)</td>
+        <td><code>BCPublishController.fetchResponse()</code> and <code>FirestoreBcResponseFetcher</code></td>
+      </tr>
+      <tr>
+        <td><strong>Latency SLA</strong></td>
+        <td>WebClient HTTP timeout: 60 seconds for outbound calls</td>
+        <td><code>WebClientConfig.java</code> configures <code>responseTimeout(Duration.ofSeconds(60))</code></td>
+      </tr>
+      <tr>
+        <td><strong>Idempotency</strong></td>
+        <td>Firestore document ID = <code>messageId</code>. Duplicate processing overwrites, not duplicates.</td>
+        <td><code>FirestoreService.saveResponse()</code> uses <code>document(messageId).set()</code></td>
+      </tr>
+      <tr>
+        <td><strong>Unique IDs</strong></td>
+        <td>Cryptographically random message IDs via <code>SecureRandom</code></td>
+        <td><code>BCPayloadBuilder.generateRandomId()</code></td>
+      </tr>
+      <tr>
+        <td><strong>API Documentation</strong></td>
+        <td>SpringDoc OpenAPI / Swagger UI on Data + Enrichment services</td>
+        <td><code>springdoc-openapi-starter-webmvc-ui</code> in <code>pom.xml</code></td>
+      </tr>
+      <tr>
+        <td><strong>Testability</strong></td>
+        <td>46 unit tests + contract tests in Data Service; SIMULATED mode in Enrichment</td>
+        <td>Data Service <code>src/test/</code>; Enrichment <code>pharmanet.endpoint=SIMULATED</code></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-gaps">
+    <h4>Where the Gaps Are</h4>
+    <ul>
+      <li><strong>No Spring Boot Actuator</strong> &mdash; None of the services include <code>spring-boot-starter-actuator</code>. There are no <code>/health</code>, <code>/info</code>, <code>/metrics</code>, or <code>/prometheus</code> endpoints. Cloud Run has no way to probe application health beyond &ldquo;did the HTTP request succeed.&rdquo;</li>
+      <li><strong>No Circuit Breakers</strong> &mdash; No Resilience4j, Spring Retry, or Hystrix. A Firestore outage cascades to every in-flight transaction without graceful degradation.</li>
+      <li><strong>No Distributed Tracing</strong> &mdash; No OpenTelemetry, Cloud Trace, or Zipkin. There is no way to trace a single transaction across Client &rarr; Data Service &rarr; Pub/Sub &rarr; Enrichment Service &rarr; PharmaNet &rarr; Firestore. Debugging latency issues requires manual log correlation.</li>
+      <li><strong>No Prometheus / Micrometer Metrics</strong> &mdash; No custom application metrics (e.g., transactions per message type, PharmaNet response time, builder execution time).</li>
+      <li><strong>No Docker HEALTHCHECK</strong> &mdash; Both Dockerfiles are minimal (<code>FROM temurin:23-jre, COPY app.jar, java -jar</code>). No <code>HEALTHCHECK</code> instruction.</li>
+      <li><strong>No SLA Monitoring or Alerting</strong> &mdash; The 45-second transaction SLA and 99.9% availability target exist only in documentation. There is no dashboard or alert that fires when these are breached.</li>
+      <li><strong>NFRs Documented but Not Enforced</strong> &mdash; Security (authentication, authorization, PHI protection) is defined in the hardening plan but not yet implemented in code. This makes them theoretical, not real.</li>
+    </ul>
+  </div>
+
+  <div class="section-fill">
+    <h4>How to Fill the Gap</h4>
+    <p><strong>Principle: An NFR is not real until it is (a) implemented in code, (b) monitored by a metric, and (c) enforced by an alert.</strong></p>
+    <ol>
+      <li><strong>Spring Boot Actuator</strong> &mdash; Add <code>spring-boot-starter-actuator</code> to both services. Expose <code>/actuator/health</code>, <code>/actuator/info</code>, <code>/actuator/metrics</code>. Configure Cloud Run startup and liveness probes:
+        <pre style="background:#edf2f7; padding:8px; border-radius:4px; font-size:13px; margin:8px 0;">gcloud run deploy ... \
+  --startup-probe-path=/actuator/health \
+  --liveness-probe-path=/actuator/health</pre>
+      </li>
+      <li><strong>Micrometer + Cloud Monitoring</strong> &mdash; Add <code>micrometer-registry-stackdriver</code> to export custom metrics (transactions per event type, PharmaNet call duration, Firestore latency) to Cloud Monitoring.</li>
+      <li><strong>Cloud Trace</strong> &mdash; Add <code>spring-cloud-gcp-starter-trace</code> for automatic span propagation. A single transaction ID will be visible across all three services in the Cloud Trace UI.</li>
+      <li><strong>Resilience4j Circuit Breaker</strong> &mdash; Add <code>resilience4j-spring-boot3</code> to both services. Configure circuit breakers for:
+        <ul>
+          <li>Firestore read/write operations (open after 50% failure over 10 calls)</li>
+          <li>PharmaNet HTTP calls (open after 3 consecutive failures)</li>
+        </ul>
+      </li>
+      <li><strong>SLA Dashboard</strong> &mdash; Create a Cloud Monitoring dashboard with:
+        <ul>
+          <li>P50/P95/P99 transaction latency (target: P95 &lt; 10s)</li>
+          <li>Error rate (target: &lt; 0.1%)</li>
+          <li>Availability (target: 99.9%)</li>
+        </ul>
+        Configure alerts when any SLA metric breaches its threshold for 5 consecutive minutes.
+      </li>
+    </ol>
+    <div class="estimate-badge">Estimated: 2 days (Phase 2.3 + resilience additions)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================== -->
+<!-- SUMMARY TABLE -->
+<!-- ================================================================== -->
+<h2 id="summary">Gap Summary &amp; Remediation Roadmap</h2>
+
+<table>
+  <tr><th>Question</th><th>Current Strength</th><th>Key Gap</th><th>Remediation Phase</th><th>Estimate</th></tr>
+  <tr>
+    <td>Q1: API Authentication</td>
+    <td><span class="strength-badge strength-gap">Critical Gap</span></td>
+    <td>No Spring Security, no JWT, no RBAC</td>
+    <td>Phase 1 (Endpoint Protection)</td>
+    <td>3 days</td>
+  </tr>
+  <tr>
+    <td>Q2: API Gateway</td>
+    <td><span class="strength-badge strength-gap">Critical Gap</span></td>
+    <td>No WAF, no rate limiting, no LB</td>
+    <td>Phase 2.1 (VPC + WAF)</td>
+    <td>1 day</td>
+  </tr>
+  <tr>
+    <td>Q3: Async Communication</td>
+    <td><span class="strength-badge strength-strong">Strong</span></td>
+    <td>No DLQ, no poison message handling</td>
+    <td>Phase 2.3 (Monitoring)</td>
+    <td>1 day</td>
+  </tr>
+  <tr>
+    <td>Q4: Orchestration Patterns</td>
+    <td><span class="strength-badge strength-partial">Partial</span></td>
+    <td>No circuit breaker, no saga compensation</td>
+    <td>New work (beyond current plan)</td>
+    <td>2 days</td>
+  </tr>
+  <tr>
+    <td>Q5: Caching</td>
+    <td><span class="strength-badge strength-partial">By Design</span></td>
+    <td>Polling inefficiency; no ref data cache</td>
+    <td>Optimization backlog</td>
+    <td>0.5 day</td>
+  </tr>
+  <tr>
+    <td>Q6: Capacity Management</td>
+    <td><span class="strength-badge strength-partial">Partial</span></td>
+    <td>No load testing, no monitoring dashboard</td>
+    <td>Phase 2.3 (Monitoring)</td>
+    <td>1 day</td>
+  </tr>
+  <tr>
+    <td>Q7: Vertical vs Horizontal</td>
+    <td><span class="strength-badge strength-partial">Partial</span></td>
+    <td>No documented scaling strategy</td>
+    <td>Included in Q6</td>
+    <td>0 days</td>
+  </tr>
+  <tr>
+    <td>Q8: Cost Efficiency</td>
+    <td><span class="strength-badge strength-partial">Partial</span></td>
+    <td>Polling cost, no budget alerts</td>
+    <td>Optimization + Phase 2.3</td>
+    <td>1 day</td>
+  </tr>
+  <tr>
+    <td>Q9: Making NFRs Real</td>
+    <td><span class="strength-badge strength-partial">Partial</span></td>
+    <td>No actuator, tracing, circuit breakers, SLA dashboard</td>
+    <td>Phase 2.3 + new work</td>
+    <td>2 days</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="text-align:right; font-weight:700;">TOTAL GAP REMEDIATION</td>
+    <td style="font-weight:700;">~12 days</td>
+  </tr>
+</table>
+
+<h3>Overlap with Security Hardening Plan</h3>
+<div class="card">
+  <p>Of the ~12 days estimated above, approximately <strong>7 days overlap</strong> with the existing 27-day Security Hardening Plan (Phases 1, 2.1, and 2.3). The additional ~5 days cover:</p>
+  <ul>
+    <li><strong>2 days:</strong> Resilience4j circuit breakers and saga compensation (Q4)</li>
+    <li><strong>2 days:</strong> Firestore polling replacement with real-time listeners (Q5, Q8)</li>
+    <li><strong>0.5 day:</strong> Load testing and concurrency tuning (Q6, Q7)</li>
+    <li><strong>0.5 day:</strong> GCP budget alerts and Firestore native TTL (Q8)</li>
+  </ul>
+  <p>If these are added to the Security Hardening Plan, the revised total becomes <strong>~32 working days</strong> (1 developer + Cursor AI assistance).</p>
+</div>
+
+</div>
+
+<footer style="background: var(--primary); color: white; text-align: center; padding: 20px; margin-top: 48px; font-size: 13px; opacity: 0.9;">
+  Solis DIS Platform &mdash; Enterprise Architecture Q&amp;A &mdash; CONFIDENTIAL &mdash; April 2026
+</footer>
+
+</body>
+</html>

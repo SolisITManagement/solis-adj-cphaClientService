@@ -1,0 +1,937 @@
+================================================================================
+  SOLIS DIS - COMPLETE ARCHITECTURE OVERVIEW
+  BC PharmaNet HL7 Messaging Platform
+================================================================================
+  Version: 1.0 (Post Security Hardening - Target State)
+  Date: April 2026
+  Author: Solis / Careverse Engineering
+================================================================================
+
+
+TABLE OF CONTENTS
+=================
+  1. Executive Summary
+  2. System Architecture (Three-Layer Model)
+  3. Technology Stack
+  4. Service Inventory
+  5. Data Flow - End to End
+  6. Service 1: Client Application (cphaClientService)
+  7. Service 2: Data Service (solis-dis-dataservice)
+  8. Service 3: Enrichment Service (solis-dis-enrichmentservice)
+  9. GCP Infrastructure
+  10. Database Design (Firestore)
+  11. Messaging (Pub/Sub)
+  12. HL7 Message Coverage
+  13. Security Architecture (Target State)
+  14. Monitoring and Observability (Target State)
+  15. Disaster Recovery and Business Continuity (Target State)
+  16. CI/CD Pipeline (Target State)
+  17. Current State vs Target State Gap Summary
+
+
+================================================================================
+1. EXECUTIVE SUMMARY
+================================================================================
+
+The Solis DIS (Drug Information System) platform is a cloud-native
+microservices architecture designed to facilitate HL7 messaging between
+Canadian healthcare providers and the BC PharmaNet system. The platform
+processes pharmacy transactions (dispensing claims, patient lookups,
+prescription management) by transforming simplified business JSON into
+standards-compliant HL7 v2 and v3 messages.
+
+The system is built on Google Cloud Platform, deployed to Cloud Run in the
+Montreal (northamerica-northeast1) region, with Firestore for persistence
+and Pub/Sub for asynchronous inter-service messaging.
+
+The architecture supports:
+  - 25+ BC PharmaNet message types (mandatory and optional)
+  - HL7 v2 pipe-delimited and HL7 v3 XML message formats
+  - CPhA adjudication messaging
+  - Real-time request/response correlation via Firestore polling
+  - Simulated PharmaNet endpoint for development and testing
+
+
+================================================================================
+2. SYSTEM ARCHITECTURE (THREE-LAYER MODEL)
+================================================================================
+
+The platform is organized into three logical layers:
+
+  Layer 1: CLIENT SYSTEM (Careverse)
+  -----------------------------------
+  Angular/TypeScript web application + Spring Boot test client
+  User-facing interface for submitting pharmacy transactions
+
+  Layer 2: ORCHESTRATION LAYER (Data Service)
+  --------------------------------------------
+  Receives requests, persists inbound data, publishes to Pub/Sub,
+  polls for responses, returns results to the client
+
+  Layer 3: MESSAGE PROCESSING ENGINE (Enrichment Service)
+  --------------------------------------------------------
+  Receives Pub/Sub push messages, builds HL7 v2/v3 messages,
+  sends to PharmaNet, persists responses to Firestore
+
+
+  Request Flow Diagram:
+  ---------------------
+
+  Careverse (Angular)
+       |
+       | HTTP POST (JSON)
+       v
+  Client Service (Spring Boot, port 9090)
+       |
+       | HTTP POST (full JSON payload with HL7 envelope)
+       v
+  Data Service (Cloud Run)
+       |
+       |--- [1] Persist inbound request to Firestore (dis-bc-inbound-requests)
+       |--- [2] Publish JSON to Pub/Sub topic (dis-bc-request)
+       |--- [3] Poll Firestore for response (dis-bc-responses)
+       |
+       |         Pub/Sub (push subscription)
+       |              |
+       |              | HTTP POST (push envelope)
+       |              v
+       |         Enrichment Service (Cloud Run)
+       |              |
+       |              |--- [A] Decode Base64 payload
+       |              |--- [B] Route by eventTypeCode + versionCode
+       |              |--- [C] Build HL7 v2 or v3 message
+       |              |--- [D] Send to PharmaNet endpoint
+       |              |--- [E] Persist response to Firestore (dis-bc-responses)
+       |              |
+       |         <--- Firestore write triggers poll success
+       |
+       | HTTP 200 (response JSON)
+       v
+  Client Service
+       |
+       | Render response in Thymeleaf UI
+       v
+  User sees HL7 request, HL7 response, and full database record
+
+
+================================================================================
+3. TECHNOLOGY STACK
+================================================================================
+
+  Component                | Technology                      | Version
+  -------------------------|---------------------------------|---------
+  Client App (Careverse)   | Angular, TypeScript             | -
+  Test Client Service      | Spring Boot, Thymeleaf          | 3.2.5
+  Data Service             | Spring Boot, Spring Web         | 3.5.13
+  Enrichment Service       | Spring Boot, Spring Web         | 3.5.13
+  Programming Language     | Java (source)                   | 17/21
+  Runtime JRE              | Eclipse Temurin                 | 23
+  Build Tool               | Apache Maven                    | 3.x
+  Compute                  | Google Cloud Run                | Serverless
+  Database                 | Google Cloud Firestore          | NoSQL
+  Messaging                | Google Cloud Pub/Sub            | Push
+  Container Registry       | GCP Artifact Registry           | -
+  Build Pipeline           | Google Cloud Build              | -
+  Region                   | northamerica-northeast1         | Montreal
+  HL7 v2 Builder           | Custom Java (pipe-delimited)    | v2
+  HL7 v3 Builder           | JAXB (XML marshalling)          | v3
+  API Documentation        | SpringDoc OpenAPI               | 2.8.6
+  HTTP Client (outbound)   | Spring WebFlux WebClient        | Reactive
+  HTTP Client (HL7 send)   | Java HttpClient                 | JDK
+  JSON Processing          | Jackson ObjectMapper            | -
+  Template Engine          | Thymeleaf                       | -
+
+
+================================================================================
+4. SERVICE INVENTORY
+================================================================================
+
+  Service Name                   | Repository                        | Cloud Run Name               | Port
+  -------------------------------|-----------------------------------|------------------------------|------
+  Client Service (test UI)       | solis-adj-cphaClientService       | (local / Cloud Run optional) | 9090
+  Data Service                   | solis-dis-dataservice             | solis-dis-dataservice         | 8080
+  Enrichment Service             | solis-dis-enrichmentservice       | solis-dis-enrichmentservice   | 8080
+
+  Supporting GCP Resources:
+  - Pub/Sub Topic: dis-bc-request
+  - Pub/Sub Subscription: dis-bc-request-sub (push to Enrichment Service)
+  - Firestore Collections: dis-bc-inbound-requests, dis-bc-responses
+  - Artifact Registry: solis-public/solis-dis-messages
+  - GCP Project: solis-public
+
+
+================================================================================
+5. DATA FLOW - END TO END
+================================================================================
+
+  Step 1: USER SUBMITS REQUEST
+  - User fills in business data (patient, prescription, pharmacy) in the
+    Careverse Angular UI or the test Client Service Thymeleaf forms
+  - Client Service builds a full JSON payload:
+    * Header (messageId, dateTime, versionCode)
+    * Sender/Receiver identifiers
+    * MSH segment data
+    * Event (eventTypeCode, interactionId)
+    * Candidate (patient demographics)
+    * Visit/Prescription data
+    * ZCA/ZCB/ZCC PharmaNet segments
+  - HTTP POST to Data Service: /api/dis/bc/publish
+
+  Step 2: DATA SERVICE ORCHESTRATES
+  - Receives JSON, extracts Header.messageId
+  - Persists inbound request to Firestore collection "dis-bc-inbound-requests"
+    with schema version PHARMANET_INBOUND_V1
+  - Publishes full JSON to Pub/Sub topic "dis-bc-request" with attribute
+    correlationMessageId = Header.messageId
+  - Begins polling Firestore collection "dis-bc-responses" for document
+    with ID = Header.messageId
+  - Polls up to 226 times with 200ms intervals (~45 second timeout)
+
+  Step 3: PUB/SUB DELIVERS TO ENRICHMENT SERVICE
+  - GCP Pub/Sub pushes message as HTTP POST to:
+    https://solis-dis-enrichmentservice-.../api/pharmanet/push-handler
+  - Push envelope contains Base64-encoded message data and publishTime
+
+  Step 4: ENRICHMENT SERVICE PROCESSES
+  - Decodes Base64 payload to JSON
+  - Checks message age against timeout.seconds (120s) - drops stale messages
+  - Extracts Event.eventTypeCode and Header.versionCode
+  - Routes to appropriate builder:
+    * V3PR1 version -> HL7 v3 XML builders (FindCandidate, GetDemographics)
+    * V2PR1 version -> HL7 v2 PharmaNet builders (25+ transaction types)
+    * ADT codes (A01-A31, DISPENSE) -> ADT builders
+  - Builds standards-compliant HL7 message
+  - Sends to PharmaNet endpoint (real or SIMULATED)
+  - Receives HL7 response
+
+  Step 5: RESPONSE PERSISTED
+  - Enrichment Service writes to Firestore "dis-bc-responses" with:
+    * messageId (document ID)
+    * eventTypeCode
+    * hl7Request (the built HL7 message)
+    * hl7Response (PharmaNet's reply)
+    * jsonRequest (original JSON)
+    * createDateTime, updateDateTime, expireOn (TTL: 30 days)
+
+  Step 6: DATA SERVICE RETURNS RESPONSE
+  - Data Service's poll detects the new document
+  - Returns full response JSON to Client Service
+  - HTTP 200 with complete record
+
+  Step 7: CLIENT DISPLAYS RESULT
+  - Client Service renders three panels:
+    * HL7 Request (built by services)
+    * HL7 Response (from PharmaNet)
+    * Full Response (complete database record)
+
+
+================================================================================
+6. SERVICE 1: CLIENT APPLICATION (cphaClientService)
+================================================================================
+
+  Repository: solis-adj-cphaClientService
+  Framework:  Spring Boot 3.2.5, Java 21
+  Port:       9090
+  Purpose:    Test UI for submitting PharmaNet and adjudication messages
+
+  6.1 JAVA CLASSES (10)
+  ----------------------
+
+  | Class                      | Package                          | Role                                    |
+  |----------------------------|----------------------------------|-----------------------------------------|
+  | CphaClientApplication      | com.solis.adj.client             | Spring Boot entry point                 |
+  | WebClientConfig            | ...config                        | WebClient bean, 60s timeout             |
+  | CphaClientService          | ...service                       | HTTP POST to all downstream services    |
+  | HomeController             | ...controller                    | Landing page, navigation (/, /adj, /bc) |
+  | AdjudicationController     | ...controller                    | CPhA adjudication + totals endpoints    |
+  | BCPharmaNetController      | ...controller                    | All BC PharmaNet GET/POST endpoints     |
+  | BCPayloadBuilder           | ...util                          | JSON payload builder with event config  |
+  | JsonAccentRemover          | ...controller                    | Strips diacritics from patient names    |
+  | RequestFixedStringToJson   | ...controller                    | CPhA fixed-width string parser          |
+  | TimeZoneChecker            | ...controller                    | Standalone timezone utility             |
+
+  6.2 CONTROLLERS AND ENDPOINTS
+  ------------------------------
+
+  HomeController:
+    GET  /                  -> index.html (landing page)
+    GET  /adjudication      -> adjudication.html
+    GET  /ehealth-bc        -> ehealth-bc.html
+
+  AdjudicationController:
+    GET  /jsononly           -> jsononly.html (adjudication form)
+    POST /adjudicate         -> submit adjudication or retry
+    GET  /total-and-details -> tot-req-and-res-json.html
+    POST /totals             -> submit totals request
+
+  BCPharmaNetController:
+    GET  /bc-find-candidate, /bc-get-demographics, /bc-patient-profile,
+         /bc-prescriber-id, /bc-claim-reversal, /bc-retrieve-rx,
+         /bc-record-rx, /bc-profile-info-update, /bc-update-rx-status,
+         /bc-adjust-rx, /bc-location-details, /bc-dispense-event,
+         /bc-adj-reconciliation, /bc-protective-word, /bc-keyword-verify,
+         /bc-medication-update, /bc-medication-update-reversal,
+         /bc-phn-assignment, /bc-patient-name-search
+    POST /callHl7Event       -> builds payload, calls Data Service
+
+  6.3 PAYLOAD BUILDER (BCPayloadBuilder)
+  ----------------------------------------
+
+  Transforms simplified business JSON into full HL7 envelope:
+
+  Input (user provides):
+    {
+      "Patient First Name": "...",
+      "Patient Last Name": "...",
+      "PHN": "...",
+      "Date of Birth": "...",
+      "Rx Number": "..."
+    }
+
+  Output (sent to Data Service):
+    {
+      "Header": { "messageId": "<random>", "dateTime": "<now>", ... },
+      "Sender": { ... },
+      "Receiver": { ... },
+      "MSH": { "sendingApplication": "...", "security": "..." },
+      "Event": { "eventTypeCode": "TAC_TDU", "interactionId": "TAC_TDU" },
+      "Candidate": { "firstName": "...", "lastName": "...", "phn": "..." },
+      "Visit": { "rxNumber": "..." },
+      "ZCA": { ... }, "ZCB": { ... }
+    }
+
+  Event Configuration Map (19 entries):
+    bc-find-candidate         -> HCIM_IN_FindCandidates (V3PR1)
+    bc-get-demographics       -> HCIM_IN_GetCandidate (V3PR1)
+    bc-patient-profile        -> TAC_TDU (V2PR1)
+    bc-prescriber-id          -> TIP (V2PR1)
+    bc-claim-reversal         -> TAC_TDU_11 (V2PR1)
+    bc-retrieve-rx            -> TRX_X0 (V2PR1)
+    bc-record-rx              -> TRX_X1 (V2PR1)
+    bc-profile-info-update    -> TPI (V2PR1)
+    bc-update-rx-status       -> TRX_X2 (V2PR1)
+    bc-adjust-rx              -> TRX_X3 (V2PR1)
+    bc-location-details       -> TIL (V2PR1)
+    bc-dispense-event         -> DISPENSE (V2PR1)
+    bc-adj-reconciliation     -> TDT (V2PR1)
+    bc-protective-word        -> TCP (V2PR1)
+    bc-keyword-verify         -> TCP (V2PR1)
+    bc-medication-update      -> TMU (V2PR1)
+    bc-medication-update-reversal -> TMU_REVERSAL (V2PR1)
+    bc-phn-assignment         -> TPH (V2PR1)
+    bc-patient-name-search    -> TPN (V2PR1)
+
+  6.4 DOWNSTREAM SERVICE CALLS
+  ------------------------------
+
+  All calls via WebClient (60s timeout, synchronous .block()):
+
+  | Method               | Target URL Property                  | Default (local)                       |
+  |----------------------|--------------------------------------|---------------------------------------|
+  | sendJsonToPublisher  | target.adjudicate.service.url        | http://localhost:8080/publish          |
+  | retry                | target.adjudicate.service.retry.url  | http://localhost:8080/retryAdjResponse |
+  | sendJsonPublishTotals| target.totals.service.url            | http://localhost:8080/totals           |
+  | sendHL7Request       | target.dis.bc.hl7.event.url          | http://localhost:8080/api/dis/bc/publish |
+
+  Cloud overrides in application-cloud.properties point to Cloud Run URLs.
+
+  6.5 HTML TEMPLATES (25)
+  -------------------------
+
+  Landing/Navigation: index.html, adjudication.html, ehealth-bc.html
+  Adjudication: jsononly.html, tot-req-and-res-json.html
+  BC PharmaNet: 19 templates (bc-find-candidate.html through bc-patient-name-search.html)
+  Legacy/unused: index2.html, indexworking.html
+
+
+================================================================================
+7. SERVICE 2: DATA SERVICE (solis-dis-dataservice)
+================================================================================
+
+  Repository: solis-dis-dataservice
+  Framework:  Spring Boot 3.5.13, Java 17 (runtime: Temurin 23)
+  Port:       8080
+  Cloud Run:  solis-dis-dataservice
+  Purpose:    Orchestration - persist, publish, poll for responses
+
+  7.1 JAVA CLASSES (24 main + 46 test)
+  --------------------------------------
+
+  Core Classes:
+  | Class                              | Role                                              |
+  |------------------------------------|---------------------------------------------------|
+  | SolisDisDataServiceApplication     | Spring Boot entry point                           |
+  | BCPublishController                | REST API: publish, retry, smoke test              |
+  | JsonSanitizer                      | Cleans malformed JSON before parsing              |
+  | FirestoreService                   | Read/write Firestore documents                    |
+  | FirestoreConfig                    | Firestore client bean                             |
+  | PublisherService                   | Pub/Sub publish with correlationMessageId         |
+  | BcRequestPublisher                 | Publisher interface                               |
+  | PubSubPublisherConfig              | Publisher bean wiring                             |
+  | PharmanetIngestionService          | Persist inbound + build publish payload           |
+  | PharmanetPublishOrchestrator       | Full workflow: load, persist, publish, poll        |
+  | FirestoreBcResponseFetcher         | Poll dis-bc-responses collection                  |
+  | PharmanetInboundDocumentFactory    | Build Firestore document shape                    |
+  | PassthroughPublishPayloadComposer  | Serialize JSON for Pub/Sub                        |
+  | PharmanetPublishMessagePreparer    | Deep-copy template, set messageId                 |
+  | PharmanetMessageBundleLoader       | Load bundled message templates                    |
+  | PharmanetMessageCorrelationIdExtractor | Extract Header.messageId                       |
+
+  7.2 API ENDPOINTS
+  ------------------
+
+  Base: /api/dis
+
+  POST /api/dis/bc/publish
+    - Main endpoint for BC PharmaNet messages
+    - Accepts full JSON payload
+    - Persists to dis-bc-inbound-requests
+    - Publishes to Pub/Sub topic dis-bc-request
+    - Polls dis-bc-responses for result
+    - Returns 200 (response), 400 (missing messageId), 504 (timeout)
+
+  GET  /api/dis/response/bc/retry?messageId=
+    - Retry polling for a response by messageId
+    - Returns 200 (found), 400 (blank id), 404 (not found)
+
+  POST /api/dis/bc/pharmanet/adjudicate-dispense-claim
+    - Smoke test endpoint using bundled template
+    - Toggleable via pharmanet.publish.enabled property
+
+  7.3 CONFIGURATION
+  ------------------
+
+  | Property                        | Value                    |
+  |---------------------------------|--------------------------|
+  | gcp.project-id                  | solis-public             |
+  | gcp.bc-topic-id                 | dis-bc-request           |
+  | gcp.bc-inbound-collection-id    | dis-bc-inbound-requests  |
+  | pharmanet.publish.enabled       | true                     |
+  | response.timeout                | 200 (ms between polls)   |
+  | response.retry                  | 225 (max poll attempts)  |
+
+  Effective poll timeout: ~45 seconds (225 retries x 200ms)
+
+  7.4 TESTS (46 files)
+  ----------------------
+
+  Unit tests: Controller (WebMvc), services, document factory, bundle loader
+  Contract tests: Per-message type (TAC_TDU, TID, TIP, TMU, TRX, etc.)
+  Integration tests (opt-in via -Pintegration):
+    - DispenseClaimPublishIntegrationTest
+    - FirestoreServiceIT
+    - PubSubPublishFunctionalIT
+
+
+================================================================================
+8. SERVICE 3: ENRICHMENT SERVICE (solis-dis-enrichmentservice)
+================================================================================
+
+  Repository: solis-dis-enrichmentservice
+  Framework:  Spring Boot 3.5.13 (runtime: Temurin 23)
+  Port:       8080
+  Cloud Run:  solis-dis-enrichmentservice
+  Purpose:    Build HL7 messages, send to PharmaNet, persist responses
+
+  8.1 JAVA CLASSES (65+ main)
+  ----------------------------
+
+  Core:
+  | Class                        | Role                                              |
+  |------------------------------|---------------------------------------------------|
+  | SolisDISEnrichmentApplication| Spring Boot entry point                           |
+  | PharmaNetMessageController   | Push handler: /api/pharmanet/push-handler         |
+  | PharmanetEventService        | Routes eventTypeCode to builder, orchestrates flow|
+  | PharmaNetClientService       | Sends HL7 to PharmaNet (real or SIMULATED)        |
+  | FirestoreService             | Persists response documents                       |
+  | FirestoreConfig              | Firestore client bean                             |
+  | StringUtils                  | JSON/HL7 helper utilities                         |
+
+  Configuration:
+  | Class                    | Role                                               |
+  |--------------------------|-----------------------------------------------------|
+  | AdtBuilderConfig         | Maps A01-A31, DISPENSE -> ADT builders              |
+  | MandatoryPharmaNetConfig | Maps mandatory PharmaNet codes -> builders           |
+  | OptionalPharmaNetConfig  | Maps optional PharmaNet codes -> builders            |
+
+  HL7 v2 Builders (AbstractHL7Builder - 41 classes):
+    Mandatory ADT: AdmitPatient, TransferPatient, DischargePatient,
+                   UpdatePatient, DemographicUpdate, DispenseEvent
+    Optional ADT: 35 classes (PreAdmit, CancelAdmit, CancelTransfer, etc.)
+
+  HL7 v2 PharmaNet Builders (AbstractPharmaNetBuilder - 24 classes):
+    Mandatory: AdjudicateDispenseClaim, ClaimReversal, AdjudicationReconciliation,
+               PatientKeywordMaintenance, GetLocationDetails,
+               PrescriberIdentification, PatientProfileInfoUpdate,
+               PatientProfileRequest, RetrievePatientPrescription,
+               RecordPrescription, UpdatePrescriptionStatus,
+               AdjustAdaptPrescription, PatientIdentification
+    Optional:  DrugMonograph, DueInquiry, MedicationUpdate,
+               MedicationUpdateReversal, PatientAddressUpdate,
+               PhnAssignment, ProfileMailingRequest, PatientNameSearch,
+               PatientProfileRecent, PatientProfileFilledElsewhere,
+               RetrievePrescriberPrescription
+
+  HL7 v3 Builders (JAXB XML - 4 classes + 26 model classes):
+    HL7V3MessageBuilder, FindCandidateMessageService,
+    GetDemographicsService, FindCandidateMessageBuilder
+
+  8.2 API ENDPOINTS
+  ------------------
+
+  POST /api/pharmanet/push-handler
+    - Receives Pub/Sub push envelope (JSON with Base64-encoded message)
+    - Drops messages older than timeout.seconds (120s)
+    - Decodes payload, extracts eventTypeCode and versionCode
+    - Routes:
+      * V3PR1 -> HL7 v3 XML builder (FindCandidate, GetDemographics)
+      * V2PR1 -> PharmaNet builder map, then ADT builder map
+    - Builds HL7 message
+    - Sends to PharmaNet endpoint
+    - Persists to Firestore dis-bc-responses
+    - Returns 200 (success), 204 (stale message), 400 (missing fields), 500 (error)
+
+  8.3 BUILDER ROUTING LOGIC
+  ---------------------------
+
+  PharmanetEventService.initBuilderMap() merges three maps:
+
+  1. mandatoryPnetBuilderMap (MandatoryPharmaNetConfig):
+     TAC_TDU, TAC_TDU_01, TAC_TDU_11, TAC_TDU_REVERSAL,
+     TDT, TCP, TIL, TIP, TPI, TRP, TRX_X0, TRX_X1, TRX_X2, TRX_X3
+
+  2. optionalPnetBuilderMap (OptionalPharmaNetConfig):
+     TID, TPA, TPH, TPN, TDR, TDU_INQUIRY, TPM, TMU, TMU_REVERSAL,
+     TRR, TRS, TRX_X4
+
+  3. adtBuilderMap (AdtBuilderConfig):
+     A01, A02, A03, A08, A31, DISPENSE
+
+  Routing priority: PharmaNet map first, then ADT map.
+  @Qualifier annotations ensure correct Spring bean injection.
+
+  8.4 CONFIGURATION
+  ------------------
+
+  | Property                  | Value                     |
+  |---------------------------|---------------------------|
+  | gcp.project-id            | solis-public              |
+  | gcp.bc-topic-id           | dis-bc-request            |
+  | gcp.bc-subscription-id    | dis-bc-request-sub        |
+  | pubsub.pull.enabled       | false (push only)         |
+  | pharmanet.endpoint        | SIMULATED (or real URL)   |
+  | db.bc-response-collection | dis-bc-responses          |
+  | db.expire-in-days         | 30                        |
+  | timeout.seconds           | 120                       |
+
+  8.5 PHARMANET CLIENT
+  ----------------------
+
+  PharmaNetClientService supports two modes:
+    - SIMULATED: Returns canned HL7 ACK responses (for testing)
+    - Real endpoint: HTTP POST with Content-Type:
+      * application/hl7-v2 for v2 pipe-delimited messages
+      * application/xml for v3 JAXB-marshalled XML
+
+
+================================================================================
+9. GCP INFRASTRUCTURE
+================================================================================
+
+  9.1 CURRENT STATE
+  ------------------
+
+  GCP Project: solis-public
+  Region: northamerica-northeast1 (Montreal, Canada)
+
+  Compute:
+    - Cloud Run: solis-dis-dataservice (serverless, auto-scaling)
+    - Cloud Run: solis-dis-enrichmentservice (serverless, auto-scaling)
+    - Both use Temurin 23 JRE container images
+
+  Database:
+    - Cloud Firestore (Native mode)
+    - Collections: dis-bc-inbound-requests, dis-bc-responses
+    - Document TTL: 30 days (application-managed via expireOn field)
+
+  Messaging:
+    - Pub/Sub Topic: dis-bc-request
+    - Pub/Sub Subscription: dis-bc-request-sub (PUSH to Enrichment Service)
+    - Push endpoint: https://solis-dis-enrichmentservice-.../api/pharmanet/push-handler
+
+  Container Registry:
+    - Artifact Registry: northamerica-northeast1-docker.pkg.dev/solis-public/solis-dis-messages
+
+  Build:
+    - Cloud Build (triggered via deploy.sh scripts)
+    - Local Maven build -> SCP to Cloud Shell -> gcloud builds submit
+
+  Monitoring:
+    - Cloud Logging (stdout from Cloud Run)
+    - No custom dashboards or alerts configured
+
+  9.2 TARGET STATE (after security hardening)
+  --------------------------------------------
+
+  Networking:
+    - VPC with Serverless VPC Connector for Cloud Run
+    - Cloud Armor WAF with OWASP top-10 rules
+    - Global HTTPS Load Balancer with SSL certificates
+
+  Security:
+    - Cloud Run: --no-allow-unauthenticated, --ingress=internal
+    - IAM service accounts with least-privilege roles
+    - Secret Manager for all credentials and API keys
+    - CORS policy on Data Service
+
+  Monitoring:
+    - Cloud Monitoring dashboards (latency, error rate, throughput)
+    - Alerting policies (5xx spike, latency P95, Pub/Sub dead letters)
+    - Cloud Trace for distributed tracing across services
+    - Spring Boot Actuator health endpoints
+
+  Multi-Region:
+    - Secondary region: northamerica-northeast2 (Toronto)
+    - Firestore multi-region replication
+    - Global Load Balancer with failover
+
+
+================================================================================
+10. DATABASE DESIGN (FIRESTORE)
+================================================================================
+
+  Collection: dis-bc-inbound-requests
+  Purpose: Audit trail of all inbound requests
+  Document ID: Header.messageId
+  Schema:
+    {
+      "schema": "PHARMANET_INBOUND_V1",
+      "eventTypeCode": "TAC_TDU",
+      "payload": { <full JSON tree> },
+      "persistedAt": <server timestamp>,
+      "rawJson": "<optional raw string>"
+    }
+
+  Collection: dis-bc-responses
+  Purpose: HL7 responses from PharmaNet (correlated by messageId)
+  Document ID: Header.messageId
+  Schema:
+    {
+      "messageId": "abc-123",
+      "eventTypeCode": "TAC_TDU",
+      "hl7Request": "<built HL7 message>",
+      "hl7Response": "<PharmaNet response>",
+      "jsonRequest": { <original JSON> },
+      "createDateTime": "2026-04-07T...",
+      "updateDateTime": "2026-04-07T...",
+      "expireOn": "2026-05-07T..."
+    }
+
+  Correlation Model:
+    - Client generates a unique messageId (random alphanumeric)
+    - messageId flows through: Client -> Data Service -> Pub/Sub -> Enrichment
+    - Data Service polls dis-bc-responses by messageId
+    - Enrichment Service writes response with same messageId as document ID
+    - This creates an implicit request-response correlation without callbacks
+
+
+================================================================================
+11. MESSAGING (PUB/SUB)
+================================================================================
+
+  Topic: projects/solis-public/topics/dis-bc-request
+  Subscription: dis-bc-request-sub (PUSH delivery)
+
+  Push Endpoint: Enrichment Service /api/pharmanet/push-handler
+
+  Message Format:
+    - Data: Full JSON payload (UTF-8, Base64-encoded by Pub/Sub)
+    - Attributes: { "correlationMessageId": "<Header.messageId>" }
+
+  Push Envelope (received by Enrichment Service):
+    {
+      "message": {
+        "data": "<Base64 encoded JSON>",
+        "messageId": "<Pub/Sub server message ID>",
+        "publishTime": "2026-04-07T12:00:00Z",
+        "attributes": { "correlationMessageId": "abc-123" }
+      },
+      "subscription": "projects/solis-public/subscriptions/dis-bc-request-sub"
+    }
+
+  Stale Message Handling:
+    - Enrichment Service checks publishTime + timeout.seconds (120s)
+    - If message is stale, returns 204 (ACK without processing)
+    - This prevents processing of messages stuck in the backlog
+
+  Delivery Guarantees:
+    - At-least-once delivery (Pub/Sub default)
+    - Idempotency via Firestore document ID = messageId (overwrites)
+
+
+================================================================================
+12. HL7 MESSAGE COVERAGE
+================================================================================
+
+  12.1 MANDATORY PHARMANET MESSAGES (HL7 v2)
+  ---------------------------------------------
+
+  | Event Code   | Transaction        | Builder Class                     |
+  |--------------|--------------------|-----------------------------------|
+  | TAC_TDU      | Adjudicate Claim   | AdjudicateDispenseClaimBuilder    |
+  | TAC_TDU_11   | Claim Reversal     | ClaimReversalBuilder              |
+  | TDT          | Reconciliation     | AdjudicationReconciliationBuilder |
+  | TCP          | Keyword Maintenance| PatientKeywordMaintenanceBuilder  |
+  | TIL          | Location Details   | GetLocationDetailsBuilder         |
+  | TIP          | Prescriber ID      | PrescriberIdentificationBuilder   |
+  | TPI          | Profile Info Update| PatientProfileInfoUpdateBuilder   |
+  | TRP          | Patient Profile    | PatientProfileRequestBuilder      |
+  | TRX_X0       | Retrieve Rx        | RetrievePatientPrescriptionBuilder|
+  | TRX_X1       | Record Rx          | RecordPrescriptionBuilder         |
+  | TRX_X2       | Update Rx Status   | UpdatePrescriptionStatusBuilder   |
+  | TRX_X3       | Adjust/Adapt Rx    | AdjustAdaptPrescriptionBuilder    |
+
+  12.2 OPTIONAL PHARMANET MESSAGES (HL7 v2)
+  -------------------------------------------
+
+  | Event Code    | Transaction                | Builder Class                          |
+  |---------------|----------------------------|----------------------------------------|
+  | TID           | Patient Identification     | PatientIdentificationBuilder           |
+  | TPA           | Patient Address Update     | PatientAddressUpdateBuilder            |
+  | TPH           | PHN Assignment             | PhnAssignmentBuilder                   |
+  | TPN           | Patient Name Search        | PatientNameSearchBuilder               |
+  | TDR           | Drug Monograph             | DrugMonographBuilder                   |
+  | TDU_INQUIRY   | DUE Inquiry                | DueInquiryBuilder                      |
+  | TPM           | Profile Mailing Request    | ProfileMailingRequestBuilder           |
+  | TMU           | Medication Update          | MedicationUpdateBuilder                |
+  | TMU_REVERSAL  | Medication Update Reversal | MedicationUpdateReversalBuilder        |
+  | TRR           | Profile Recent             | PatientProfileRecentBuilder            |
+  | TRS           | Profile Filled Elsewhere   | PatientProfileFilledElsewhereBuilder   |
+  | TRX_X4        | Prescriber Rx Retrieve     | RetrievePrescriberPrescriptionBuilder  |
+
+  12.3 HL7 v3 MESSAGES (XML)
+  ----------------------------
+
+  | Event Code              | Transaction         | Builder                        |
+  |-------------------------|---------------------|--------------------------------|
+  | HCIM_IN_FindCandidates  | Find Candidate      | FindCandidateMessageService    |
+  | HCIM_IN_GetCandidate    | Get Demographics    | GetDemographicsService         |
+
+  12.4 ADT MESSAGES (HL7 v2)
+  ----------------------------
+
+  | Event Code | Message Type              | Builder Class                    |
+  |------------|---------------------------|----------------------------------|
+  | A01        | Admit Patient             | AdmitPatientMessageBuilder       |
+  | A02        | Transfer Patient          | TransferPatientMessageBuilder    |
+  | A03        | Discharge Patient         | DischargePatientMessageBuilder   |
+  | A08        | Update Patient Info       | UpdatePatientMessageBuilder      |
+  | A31        | Demographic Update        | DemographicUpdateMessageBuilder  |
+  | DISPENSE   | Dispense Event            | DispenseEventBuilder             |
+
+  TOTAL: 32 distinct message types across 65+ builder classes
+
+
+================================================================================
+13. SECURITY ARCHITECTURE (TARGET STATE)
+================================================================================
+
+  After completing all 27 days of the security hardening plan:
+
+  13.1 AUTHENTICATION AND AUTHORIZATION
+  ---------------------------------------
+
+  Client -> Data Service:
+    - Spring Security with JWT token validation
+    - Bearer token in Authorization header
+    - JWT issuer and audience validation
+    - Role-based access control (RBAC)
+
+  Pub/Sub -> Enrichment Service:
+    - OIDC token verification on push endpoint
+    - Validates Google-issued OIDC tokens
+    - Checks service account identity
+
+  Cloud Run:
+    - --no-allow-unauthenticated flag on all services
+    - --ingress=internal for Enrichment Service
+    - IAM invoker role for authorized callers only
+
+  13.2 NETWORK SECURITY
+  -----------------------
+
+  VPC:
+    - Dedicated VPC for all services
+    - Serverless VPC Connector for Cloud Run egress
+    - Private IP communication between services
+
+  Cloud Armor (WAF):
+    - OWASP Top 10 rule set
+    - Rate limiting
+    - Geographic restrictions (Canada only)
+    - IP allowlisting for PharmaNet endpoint
+
+  CORS:
+    - Configured on Data Service
+    - Allowlist for Careverse Angular origin
+    - Restricted methods (POST, GET)
+
+  13.3 SECRETS MANAGEMENT
+  -------------------------
+
+  Google Secret Manager:
+    - PharmaNet endpoint credentials
+    - Database connection details
+    - API keys and tokens
+    - Accessed via Secret Manager API (not environment variables)
+
+  13.4 SECURITY HEADERS
+  -----------------------
+
+  Applied to all HTTP responses:
+    - Strict-Transport-Security (HSTS)
+    - X-Content-Type-Options: nosniff
+    - X-Frame-Options: DENY
+    - Content-Security-Policy
+    - X-XSS-Protection
+    - Cache-Control: no-store (for PHI responses)
+
+  13.5 PHI PROTECTION
+  ---------------------
+
+  Log Redaction:
+    - logback-spring.xml with custom pattern layout
+    - PHI fields (PHN, patient name, DOB) redacted in logs
+    - Structured JSON logging for Cloud Logging
+
+  Data at Rest:
+    - Firestore encryption (Google-managed keys, default)
+    - Option for Customer-Managed Encryption Keys (CMEK)
+
+  Data in Transit:
+    - TLS 1.2+ for all HTTPS connections
+    - Cloud Run enforces HTTPS by default
+
+  13.6 AUDIT LOGGING
+  --------------------
+
+  - Cloud Audit Logs (Admin Activity, Data Access)
+  - Application-level audit events for:
+    * Message submission
+    * PharmaNet calls
+    * Response persistence
+    * Authentication events
+  - Log sink to BigQuery or Cloud Storage for retention
+
+
+================================================================================
+14. MONITORING AND OBSERVABILITY (TARGET STATE)
+================================================================================
+
+  Cloud Monitoring Dashboards:
+    - Request latency (P50, P95, P99) per service
+    - Error rate (4xx, 5xx) per endpoint
+    - Pub/Sub message backlog and delivery latency
+    - Firestore read/write operations per second
+    - Cloud Run instance count and CPU utilization
+
+  Alerting Policies:
+    - 5xx error rate > 1% for 5 minutes
+    - P95 latency > 10 seconds
+    - Pub/Sub unacked messages > 100
+    - Firestore quota approaching limits
+    - Cloud Run cold start frequency
+
+  Distributed Tracing:
+    - Cloud Trace integration across all three services
+    - Trace ID propagated via HTTP headers
+    - End-to-end latency visibility
+
+  Health Checks:
+    - Spring Boot Actuator /health endpoint on each service
+    - Cloud Run startup and liveness probes
+    - Dependency health (Firestore, Pub/Sub connectivity)
+
+
+================================================================================
+15. DISASTER RECOVERY AND BUSINESS CONTINUITY (TARGET STATE)
+================================================================================
+
+  Backup Strategy:
+    - Automated daily Firestore exports to Cloud Storage
+    - 30-day retention for backups
+    - Point-in-time recovery capability
+
+  Multi-Region HA:
+    - Primary: northamerica-northeast1 (Montreal)
+    - Secondary: northamerica-northeast2 (Toronto)
+    - Firestore multi-region replication
+    - Global HTTPS Load Balancer with automatic failover
+    - Cloud Run deployed in both regions
+
+  Recovery Objectives:
+    - RPO (Recovery Point Objective): < 1 hour
+    - RTO (Recovery Time Objective): < 15 minutes (automated failover)
+
+  DR Runbook:
+    - Documented procedures for failover and failback
+    - Annual DR testing schedule
+    - Escalation contacts and communication plan
+
+
+================================================================================
+16. CI/CD PIPELINE (TARGET STATE)
+================================================================================
+
+  Source Control:
+    - Git repositories for each microservice
+    - Branch protection on main/master
+    - Pull request reviews required
+
+  Build Pipeline (Cloud Build):
+    - Trigger: Push to main branch
+    - Steps:
+      1. Maven build + unit tests
+      2. SAST scanning (e.g., SpotBugs, PMD)
+      3. Container image build (Docker)
+      4. Container vulnerability scanning (Artifact Registry)
+      5. Push to Artifact Registry
+      6. Deploy to Cloud Run (staging)
+      7. Integration test suite
+      8. Promote to production
+
+  Security Scanning:
+    - Static Application Security Testing (SAST) in pipeline
+    - Container image vulnerability scanning
+    - Dependency vulnerability checking (OWASP Dependency-Check)
+    - Fail pipeline on HIGH/CRITICAL findings
+
+
+================================================================================
+17. CURRENT STATE VS TARGET STATE - GAP SUMMARY
+================================================================================
+
+  | Area                      | Current State                          | Target State                              | Gap    |
+  |---------------------------|----------------------------------------|-------------------------------------------|--------|
+  | Authentication            | NONE - open endpoints                  | JWT + OIDC + IAM                          | HIGH   |
+  | Authorization             | NONE                                   | RBAC with Spring Security                 | HIGH   |
+  | Network Security          | Default Cloud Run (public)             | VPC + WAF + internal ingress              | HIGH   |
+  | Secrets Management        | application.properties / env vars      | Google Secret Manager                     | MEDIUM |
+  | Monitoring                | stdout logs only                       | Dashboards + alerts + tracing             | MEDIUM |
+  | Audit Logging             | NONE                                   | Cloud Audit Logs + app audit              | HIGH   |
+  | Security Headers          | NONE                                   | OWASP headers + HSTS                      | LOW    |
+  | PHI Log Protection        | NONE - PHI in plaintext logs           | Redacted structured logging               | HIGH   |
+  | Database Backups          | NONE                                   | Automated daily exports                   | MEDIUM |
+  | CI/CD Pipeline            | Manual deploy.sh scripts               | Cloud Build with security scanning        | MEDIUM |
+  | Multi-Region HA           | Single region (Montreal)               | Montreal + Toronto with failover          | MEDIUM |
+  | Compliance Certifications | GCP certs only (inherited)             | SOC 2, ISO 27001, PIPEDA (application)    | HIGH   |
+  | Penetration Testing       | NONE                                   | Annual third-party testing                | HIGH   |
+  | Security Policies         | NONE documented                        | IR, Access Control, Data Classification   | HIGH   |
+  | CORS                      | NONE                                   | Configured allowlist                      | LOW    |
+
+  Estimated effort to close all gaps: 27 working days (1 developer + Cursor AI)
+
+
+================================================================================
+  END OF DOCUMENT
+================================================================================
