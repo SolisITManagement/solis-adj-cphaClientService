@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CareVerse &rarr; Solis DIS Integration Guide</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1f2328;
+      --muted: #57606a;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --accent-soft: #ddf4ff;
+      --warn: #9a6700;
+      --warn-soft: #fff8c5;
+      --danger: #cf222e;
+      --danger-soft: #ffebe9;
+      --ok: #1a7f37;
+      --ok-soft: #dafbe1;
+      --code-bg: #f6f8fa;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre, kbd, samp {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      position: relative;
+    }
+    pre code { background: transparent; padding: 0; font-size: inherit; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside.toc {
+      position: sticky; top: 0; align-self: start;
+      height: 100vh; overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 24px 18px;
+      background: #fafbfc;
+    }
+    aside.toc h2 {
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin: 0 0 8px; font-weight: 600;
+    }
+    aside.toc ol { margin: 0; padding-left: 20px; }
+    aside.toc ol li { margin: 4px 0; font-size: 14px; }
+    aside.toc .brand {
+      font-weight: 700; font-size: 15px; color: var(--fg);
+      margin-bottom: 14px;
+    }
+    aside.toc .brand small { color: var(--muted); font-weight: 400; display: block; }
+
+    main {
+      padding: 40px 48px 120px;
+      max-width: 980px;
+    }
+    h1 {
+      font-size: 28px; margin: 0 0 8px;
+    }
+    h1 + .subtitle { color: var(--muted); margin-bottom: 28px; }
+    h2 {
+      font-size: 22px;
+      margin: 48px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg); z-index: 5;
+      padding-top: 10px;
+    }
+    h3 { font-size: 17px; margin: 24px 0 8px; }
+    h4 { font-size: 15px; margin: 20px 0 6px; }
+
+    table {
+      border-collapse: collapse; width: 100%;
+      margin: 10px 0 18px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left; vertical-align: top;
+    }
+    th { background: var(--code-bg); font-weight: 600; }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+      border-radius: 4px;
+    }
+    .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .callout.danger { border-color: var(--danger); background: var(--danger-soft); }
+    .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    .pills span {
+      display: inline-block;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 10px 0;
+      background: #fcfcfd;
+    }
+    details[open] { background: #fff; }
+    summary { cursor: pointer; font-weight: 600; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin: 12px 0;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+    .card h4 { margin-top: 0; }
+    .card.rec { border-color: var(--ok); }
+    .card.avoid { border-color: var(--danger); }
+    .pill-rec {
+      display: inline-block; background: var(--ok-soft); color: var(--ok);
+      padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .pill-avoid {
+      display: inline-block; background: var(--danger-soft); color: var(--danger);
+      padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      margin-left: 6px; vertical-align: middle;
+    }
+
+    .method { font-weight: 700; }
+    .method.get { color: #116329; }
+    .method.post { color: #0550ae; }
+
+    .hint {
+      font-size: 12px; color: var(--muted); margin-top: 4px;
+    }
+
+    button.copy {
+      position: absolute; top: 6px; right: 6px;
+      font-size: 11px; background: #fff; border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 4px; cursor: pointer; color: var(--muted);
+    }
+    button.copy:hover { color: var(--fg); }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      aside.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      main { padding: 24px; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc">
+    <div class="brand">CareVerse Integration<small>Solis DIS Gateway</small></div>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview &amp; architecture</a></li>
+      <li><a href="#env">Environment facts</a></li>
+      <li><a href="#endpoints">Endpoints</a></li>
+      <li><a href="#auth">Authentication</a></li>
+      <li><a href="#paths">Integration paths</a></li>
+      <li><a href="#secrets">Secret Manager setup</a></li>
+      <li><a href="#examples">Code &amp; curl examples</a></li>
+      <li><a href="#localdev">Local / dev setup</a></li>
+      <li><a href="#verify">Test &amp; verify checklist</a></li>
+      <li><a href="#errors">Error model</a></li>
+      <li><a href="#ops">Operations</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+    </ol>
+    <p class="hint" style="margin-top:24px">Version 1.0 &middot; Solis DIS team</p>
+  </aside>
+
+  <main>
+    <h1>CareVerse &rarr; Solis DIS Integration Guide</h1>
+    <div class="subtitle">How the CareVerse Angular/TypeScript application calls the Solis Drug Information Service (DIS) gateway for BC PharmaNet and NL Pharmacy Network messages.</div>
+
+    <div class="callout">
+      <strong>Who this is for</strong>
+      Engineers on the CareVerse team integrating with the Solis DIS gateway. CareVerse sends a JSON object to our gateway; Solis takes care of building the provincial wire formats (HL7 v2.1 for BC, CeRx XML v3 for NL) and delivering them to the provincial systems.
+    </div>
+
+    <!-- 1 -->
+    <h2 id="overview">1. Overview &amp; architecture</h2>
+    <p>CareVerse produces a JSON payload. It is posted to a single external HTTPS gateway fronted by a GCP global external Load Balancer and protected by Cloud Armor. Inside GCP the request is routed to the Solis <code>dataservice</code>, which persists it, publishes it to Pub/Sub, and asynchronously hands off to the <code>enrichmentservice</code>. The enrichment service constructs the provincial message (HL7 v2.1 for BC, CeRx XML for NL), calls the provincial endpoint (PharmaNet for BC, HIAL for NL), and writes the response back to Firestore. CareVerse retrieves the response via a <code>retry</code> endpoint keyed by <code>messageId</code>.</p>
+
+    <div style="overflow-x:auto;margin:8px 0 24px">
+    <svg viewBox="0 0 1000 360" width="100%" style="max-width:1000px;border:1px solid var(--border);border-radius:8px;background:#fff" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CareVerse to Solis DIS architecture">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L10,5 L0,10 z" fill="#57606a" />
+        </marker>
+        <style>
+          .lbl { font: 600 12px -apple-system, Segoe UI, sans-serif; fill: #1f2328; }
+          .sub { font: 11px -apple-system, Segoe UI, sans-serif; fill: #57606a; }
+          .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1; }
+          .box.cv { fill: #ddf4ff; stroke: #0969da; }
+          .box.gcp { fill: #dafbe1; stroke: #1a7f37; }
+          .box.prov { fill: #fff8c5; stroke: #9a6700; }
+          .edge { stroke: #57606a; stroke-width: 1.3; fill: none; }
+          .note { font: 600 11px monospace; fill: #0550ae; }
+        </style>
+      </defs>
+
+      <!-- CareVerse -->
+      <rect class="box cv" x="20" y="140" width="150" height="80" rx="8" />
+      <text class="lbl" x="95" y="175" text-anchor="middle">CareVerse</text>
+      <text class="sub" x="95" y="192" text-anchor="middle">Angular / TS</text>
+      <text class="sub" x="95" y="207" text-anchor="middle">(+ optional BFF)</text>
+
+      <!-- LB -->
+      <rect class="box gcp" x="210" y="140" width="140" height="80" rx="8" />
+      <text class="lbl" x="280" y="170" text-anchor="middle">LB</text>
+      <text class="sub" x="280" y="186" text-anchor="middle">34.98.75.115</text>
+      <text class="sub" x="280" y="201" text-anchor="middle">solis-dis-forwarding-rule</text>
+
+      <!-- Armor -->
+      <rect class="box gcp" x="210" y="30" width="140" height="70" rx="8" />
+      <text class="lbl" x="280" y="60" text-anchor="middle">Cloud Armor</text>
+      <text class="sub" x="280" y="78" text-anchor="middle">x-api-key check</text>
+
+      <!-- URL map -->
+      <rect class="box gcp" x="390" y="140" width="150" height="80" rx="8" />
+      <text class="lbl" x="465" y="170" text-anchor="middle">URL map</text>
+      <text class="sub" x="465" y="186" text-anchor="middle">/api/dis/* &rarr; DIS</text>
+      <text class="sub" x="465" y="201" text-anchor="middle">/publish,/totals &rarr; ADJ</text>
+
+      <!-- dataservice -->
+      <rect class="box gcp" x="580" y="40" width="170" height="80" rx="8" />
+      <text class="lbl" x="665" y="70" text-anchor="middle">Cloud Run</text>
+      <text class="sub" x="665" y="86" text-anchor="middle">solis-dis-dataservice</text>
+      <text class="sub" x="665" y="101" text-anchor="middle">/api/dis/bc|nl/publish</text>
+
+      <!-- Pub/Sub -->
+      <rect class="box gcp" x="580" y="150" width="170" height="60" rx="8" />
+      <text class="lbl" x="665" y="178" text-anchor="middle">Pub/Sub</text>
+      <text class="sub" x="665" y="195" text-anchor="middle">dis-bc-request, dis-nl-request</text>
+
+      <!-- enrichment -->
+      <rect class="box gcp" x="580" y="240" width="170" height="80" rx="8" />
+      <text class="lbl" x="665" y="270" text-anchor="middle">Cloud Run</text>
+      <text class="sub" x="665" y="286" text-anchor="middle">solis-dis-enrichmentservice</text>
+      <text class="sub" x="665" y="301" text-anchor="middle">builds HL7 v2.1 / CeRx</text>
+
+      <!-- Firestore -->
+      <rect class="box gcp" x="390" y="260" width="150" height="60" rx="8" />
+      <text class="lbl" x="465" y="287" text-anchor="middle">Firestore</text>
+      <text class="sub" x="465" y="303" text-anchor="middle">response store</text>
+
+      <!-- Provincial -->
+      <rect class="box prov" x="800" y="40" width="180" height="80" rx="8" />
+      <text class="lbl" x="890" y="70" text-anchor="middle">BC PharmaNet</text>
+      <text class="sub" x="890" y="86" text-anchor="middle">HL7 v2.1 MLLP/HTTPS</text>
+
+      <rect class="box prov" x="800" y="240" width="180" height="80" rx="8" />
+      <text class="lbl" x="890" y="270" text-anchor="middle">NL HIAL</text>
+      <text class="sub" x="890" y="286" text-anchor="middle">CeRx HL7 v3 XML</text>
+
+      <!-- edges -->
+      <path class="edge" d="M170 180 L210 180" marker-end="url(#arrow)" />
+      <text class="note" x="188" y="172" text-anchor="middle">x-api-key</text>
+      <path class="edge" d="M280 140 L280 100" marker-end="url(#arrow)" />
+      <path class="edge" d="M350 180 L390 180" marker-end="url(#arrow)" />
+      <path class="edge" d="M540 170 Q560 130 580 90" marker-end="url(#arrow)" />
+      <path class="edge" d="M665 120 L665 150" marker-end="url(#arrow)" />
+      <path class="edge" d="M665 210 L665 240" marker-end="url(#arrow)" />
+      <path class="edge" d="M750 280 Q770 310 540 300" marker-end="url(#arrow)" />
+      <path class="edge" d="M750 80 L800 80" marker-end="url(#arrow)" />
+      <path class="edge" d="M750 280 L800 280" marker-end="url(#arrow)" />
+    </svg>
+    </div>
+
+    <!-- 2 -->
+    <h2 id="env">2. Environment facts</h2>
+    <table>
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>GCP project hosting the gateway</td><td><code>solis-public</code></td></tr>
+      <tr><td>Region of Cloud Run backends</td><td><code>northamerica-northeast1</code></td></tr>
+      <tr><td>LB public IP (reserved)</td><td><code>34.98.75.115</code> (name <code>solis-dis-lb-ip</code>)</td></tr>
+      <tr><td>Forwarding rule</td><td><code>solis-dis-forwarding-rule</code></td></tr>
+      <tr><td>URL map</td><td><code>solis-dis-url-map</code></td></tr>
+      <tr><td>Cloud Armor policy</td><td><code>solis-dis-security-policy</code></td></tr>
+      <tr><td>Base URL today</td><td><code>http://34.98.75.115</code></td></tr>
+      <tr><td>Base URL at go-live (planned)</td><td><code>https://dis-gw.solis.example</code> (TLS + managed cert + DNS)</td></tr>
+    </table>
+    <div class="callout warn">
+      <strong>Before production</strong>
+      The gateway is HTTP-only today. We will attach a managed cert and DNS name before any external production client goes live. Code your integration against an environment variable for the base URL so the switch is a config change.
+    </div>
+
+    <!-- 3 -->
+    <h2 id="endpoints">3. Endpoints</h2>
+    <p>CareVerse always sends JSON. The Solis <code>enrichmentservice</code> builds the provincial payload downstream.</p>
+
+    <h3>3.1 BC PharmaNet</h3>
+    <table>
+      <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/api/dis/bc/publish</code></td><td>Submit a BC HL7 event request (JSON in &rarr; HL7 v2.1 built server-side &rarr; published to BC PharmaNet)</td></tr>
+      <tr><td><span class="method get">GET</span></td><td><code>/api/dis/response/bc/retry?messageId=&lt;id&gt;</code></td><td>Fetch the BC response for a previously submitted <code>messageId</code></td></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/api/dis/bc/pharmanet/adjudicate-dispense-claim</code></td><td>Adjudicate dispense claim against BC PharmaNet</td></tr>
+    </table>
+
+    <h3>3.2 NL Pharmacy Network</h3>
+    <table>
+      <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/api/dis/nl/publish</code></td><td>Submit an NL CeRx event request (e.g. <code>COMT_IN300001CA</code> Add Patient Note)</td></tr>
+      <tr><td><span class="method get">GET</span></td><td><code>/api/dis/response/nl/retry?messageId=&lt;id&gt;</code></td><td>Fetch the NL response for a previously submitted <code>messageId</code></td></tr>
+    </table>
+
+    <h3>3.3 Adjudicate / Totals</h3>
+    <table>
+      <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/publish</code></td><td>Submit adjudicate request</td></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/retryAdjResponse</code></td><td>Fetch adjudicate response</td></tr>
+      <tr><td><span class="method post">POST</span></td><td><code>/totals</code></td><td>Totals service</td></tr>
+    </table>
+
+    <h3>3.4 Request/response contract</h3>
+    <ul>
+      <li>Request <code>Content-Type: application/json</code>.</li>
+      <li>All requests MUST include the header <code>x-api-key: &lt;shared secret&gt;</code>. See <a href="#auth">&sect;4</a>.</li>
+      <li>CareVerse supplies a <code>messageId</code> (UUID recommended). If omitted, Solis extracts or generates one and returns it.</li>
+      <li>Response body:
+        <ul>
+          <li>BC: HL7 v2.1 text (returned as a string inside JSON).</li>
+          <li>NL: CeRx HL7 v3 XML (returned as a string inside JSON).</li>
+        </ul>
+      </li>
+      <li>Sample BC input JSON: <a href="../src/main/resources/sampleCPhAAccepted.json">src/main/resources/sampleCPhAAccepted.json</a>.</li>
+      <li>NL input shape: see <a href="../src/main/java/com/solis/adj/client/util/NLPayloadBuilder.java">NLPayloadBuilder.java</a> for the JSON the enrichment service expects for <code>COMT_IN300001CA</code>.</li>
+    </ul>
+
+    <!-- 4 -->
+    <h2 id="auth">4. Authentication</h2>
+    <p>The only thing on the wire is a shared API key. It is enforced by <strong>Cloud Armor</strong> in front of the Load Balancer, <em>before</em> the request reaches Cloud Run.</p>
+    <pre><code>priority 100  : ALLOW if request.headers['x-api-key'] == '&lt;shared secret&gt;'
+priority MAX  : DENY 403 (default)</code></pre>
+    <p>Send the header on every request:</p>
+    <pre><code>x-api-key: 00000000-0000-0000-0000-000000000000</code></pre>
+    <div class="callout warn">
+      <strong>Never ship the key to a browser bundle</strong>
+      If CareVerse is a pure SPA, load the key in a backend-for-frontend (BFF) and proxy the call. See <a href="#paths">&sect;5</a>.
+    </div>
+
+    <!-- 5 -->
+    <h2 id="paths">5. Integration paths</h2>
+    <p>Two topologies are supported. Solis strongly recommends <strong>Path A (BFF)</strong>.</p>
+
+    <div class="two-col">
+      <div class="card rec">
+        <h4>Path A &mdash; BFF proxy <span class="pill-rec">Recommended</span></h4>
+        <p>Angular browser &rarr; CareVerse BFF (Node/TS, Java, .NET &mdash; anything) &rarr; Solis gateway.</p>
+        <ul>
+          <li>API key lives in GCP Secret Manager, read by the BFF's service account only.</li>
+          <li>Browser never sees <code>x-api-key</code>.</li>
+          <li>No CORS changes required on the Solis side.</li>
+          <li>BFF can add CareVerse user auth (OIDC/session) in front of the call.</li>
+          <li>Easier rotation and revocation.</li>
+        </ul>
+      </div>
+
+      <div class="card avoid">
+        <h4>Path B &mdash; Direct from browser <span class="pill-avoid">Avoid if possible</span></h4>
+        <p>Angular browser &rarr; Solis gateway (no CareVerse backend).</p>
+        <ul>
+          <li>Any key shipped to the browser is effectively public.</li>
+          <li>Requires Solis to enable HTTPS + DNS (browsers block HTTPS to IP literals and block mixed content).</li>
+          <li>Requires Solis to emit CORS headers for CareVerse origins.</li>
+          <li>Mitigation: short-lived tokens minted by a Cloud Function after CareVerse OIDC auth, not a static API key.</li>
+          <li>Use only if CareVerse truly has no server-side component.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 id="pathA">5.1 Path A &mdash; BFF walkthrough</h3>
+    <ol>
+      <li>Stand up a small BFF (Node/TS is fine, so is Express, Nest, etc.). Deploy it in a CareVerse-owned GCP project or any VPC that can egress to <code>34.98.75.115</code>.</li>
+      <li>Give the BFF a dedicated service account, e.g. <code>careverse-bff@&lt;careverse-project&gt;.iam.gserviceaccount.com</code>.</li>
+      <li>Grant it <code>roles/secretmanager.secretAccessor</code> on the Solis-owned secret &mdash; see <a href="#secrets">&sect;6</a>.</li>
+      <li>At BFF startup, fetch the secret value, cache it in memory (refresh every N minutes or use event-driven reload).</li>
+      <li>Expose a thin REST surface that mirrors the Solis endpoints you need. Examples: <code>POST /bff/dis/nl/publish</code>, <code>GET /bff/dis/nl/response/:messageId</code>.</li>
+      <li>On each BFF call, forward the JSON body, attach <code>x-api-key: &lt;secret value&gt;</code> and <code>Content-Type: application/json</code>, call <code>${GATEWAY_BASE_URL}/api/dis/nl/publish</code>, relay the response.</li>
+      <li>Angular calls the BFF &mdash; same-origin, no API key in sight.</li>
+    </ol>
+
+    <details>
+      <summary>Node/TS BFF &mdash; load key from Secret Manager + forward to Solis</summary>
+<pre><code>// secret-manager.ts
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+
+const sm = new SecretManagerServiceClient();
+let cached: { value: string; expiresAt: number } | null = null;
+
+export async function getSolisApiKey(): Promise&lt;string&gt; {
+  const now = Date.now();
+  if (cached &amp;&amp; cached.expiresAt &gt; now) return cached.value;
+
+  const name = process.env.SECRET_RESOURCE_NAME!;
+  // e.g. projects/solis-public/secrets/solis-dis-gateway-api-key-careverse/versions/latest
+
+  const [version] = await sm.accessSecretVersion({ name });
+  const value = version.payload?.data?.toString() ?? '';
+  if (!value) throw new Error('Empty Solis API key');
+
+  cached = { value, expiresAt: now + 10 * 60 * 1000 }; // cache 10 min
+  return value;
+}
+
+// solis-client.ts
+import { getSolisApiKey } from './secret-manager';
+
+const BASE = process.env.GATEWAY_BASE_URL!; // e.g. https://dis-gw.solis.example
+
+export async function submitNlAddPatientNote(payload: unknown) {
+  const key = await getSolisApiKey();
+  const res = await fetch(`${BASE}/api/dis/nl/publish`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+    },
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Solis NL publish failed: ${res.status} ${text}`);
+  }
+  return text;
+}
+
+// express-bff.ts (minimal)
+import express from 'express';
+import { submitNlAddPatientNote } from './solis-client';
+
+const app = express();
+app.use(express.json({ limit: '1mb' }));
+
+app.post('/bff/dis/nl/publish', async (req, res, next) =&gt; {
+  try {
+    const result = await submitNlAddPatientNote(req.body);
+    res.type('application/json').send(result);
+  } catch (e) { next(e); }
+});
+
+app.listen(8080);</code></pre>
+    </details>
+
+    <details>
+      <summary>Angular (standalone component-style) service calling the BFF</summary>
+<pre><code>// solis-dis.service.ts
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface NlAddPatientNoteRequest {
+  messageId: string;
+  sender: { providerId: string; softwareId: string };
+  patient: { phn: string; firstName: string; lastName: string; dob: string };
+  location: { pharmacyId: string };
+  annotation: { text: string; enteredBy: string; enteredAt: string };
+}
+
+export interface SolisRawResponse {
+  messageId: string;
+  payload: string; // HL7v2.1 (BC) or CeRx XML (NL) body
+}
+
+@Injectable({ providedIn: 'root' })
+export class SolisDisService {
+  private http = inject(HttpClient);
+  private base = '/bff/dis'; // same-origin to the CareVerse BFF
+
+  submitNlPatientNote(req: NlAddPatientNoteRequest): Observable&lt;SolisRawResponse&gt; {
+    return this.http.post&lt;SolisRawResponse&gt;(`${this.base}/nl/publish`, req);
+  }
+
+  fetchNlResponse(messageId: string): Observable&lt;SolisRawResponse&gt; {
+    return this.http.get&lt;SolisRawResponse&gt;(`${this.base}/nl/response/${messageId}`);
+  }
+}</code></pre>
+    </details>
+
+    <h3 id="pathB">5.2 Path B &mdash; Direct-from-browser walkthrough</h3>
+    <p>Only feasible after Solis performs the following <em>one-time</em> changes. If you need Path B, open a ticket with the Solis DIS team first.</p>
+    <ol>
+      <li>Solis attaches a managed TLS cert and DNS name to the LB. Base URL becomes <code>https://dis-gw.solis.example</code>.</li>
+      <li>Solis enables CORS on the Cloud Run services for the explicit CareVerse origin(s), allowing headers <code>content-type, x-api-key</code> and methods <code>GET, POST, OPTIONS</code>.</li>
+      <li>CareVerse obtains a short-lived token from a Solis-owned Cloud Function (OIDC-gated). The browser puts that token in <code>x-api-key</code>. Static keys in Angular are NOT accepted.</li>
+      <li>Solis adds a Cloud Armor rule keyed on that short-lived token (or IP range) at a dedicated priority.</li>
+    </ol>
+    <div class="callout danger">
+      <strong>Compliance note</strong>
+      PHI flowing directly from browser to provincial gateways through a shared secret is almost never acceptable. If you can stand up any backend &mdash; even a tiny Cloud Run container &mdash; do Path A.
+    </div>
+
+    <!-- 6 -->
+    <h2 id="secrets">6. Secret Manager setup</h2>
+    <p>All commands run with <code>gcloud</code> against project <code>solis-public</code>. The Solis team will run the <code>create</code>/<code>versions add</code> commands; CareVerse provides the BFF service account name for the IAM bindings.</p>
+
+    <h3>Option 1 &mdash; Share the existing shared secret (quickest)</h3>
+<pre><code>gcloud secrets add-iam-policy-binding solis-dis-gateway-api-key \
+  --project=solis-public \
+  --member="serviceAccount:&lt;careverse-bff-sa&gt;@&lt;careverse-project&gt;.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"</code></pre>
+
+    <h3>Option 2 &mdash; Dedicated per-client secret <span class="pill-rec">Recommended</span></h3>
+<pre><code># 1. Create the secret shell
+gcloud secrets create solis-dis-gateway-api-key-careverse \
+  --project=solis-public \
+  --replication-policy=automatic
+
+# 2. Add a version with a freshly generated UUID
+echo -n "$(uuidgen)" | gcloud secrets versions add solis-dis-gateway-api-key-careverse \
+  --project=solis-public \
+  --data-file=-
+
+# 3. Grant CareVerse's BFF SA read access to THIS secret only
+gcloud secrets add-iam-policy-binding solis-dis-gateway-api-key-careverse \
+  --project=solis-public \
+  --member="serviceAccount:&lt;careverse-bff-sa&gt;@&lt;careverse-project&gt;.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"</code></pre>
+
+    <h3>Cloud Armor rule (Solis-side, per client)</h3>
+<pre><code># Solis team runs this after Option 2 above; &lt;NEW_KEY&gt; is the value stored in the secret.
+gcloud compute security-policies rules create 110 \
+  --project=solis-public \
+  --security-policy=solis-dis-security-policy \
+  --description="Allow CareVerse API key" \
+  --action=allow \
+  --expression="request.headers['x-api-key'] == '&lt;NEW_KEY&gt;'"</code></pre>
+
+    <div class="callout ok">
+      <strong>Why per-client secrets are worth it</strong>
+      Independent rotation, per-client audit in Cloud Audit Logs, and a single <code>gcloud compute security-policies rules delete 110</code> to revoke CareVerse without impacting anyone else.
+    </div>
+
+    <!-- 7 -->
+    <h2 id="examples">7. Code &amp; curl examples</h2>
+
+    <h3>7.1 curl &mdash; NL Add Patient Note (<code>COMT_IN300001CA</code>)</h3>
+<pre><code>curl -sS -X POST "$GATEWAY_BASE_URL/api/dis/nl/publish" \
+  -H "content-type: application/json" \
+  -H "x-api-key: $SOLIS_API_KEY" \
+  -d '{
+        "messageId": "11111111-1111-1111-1111-111111111111",
+        "eventCode": "COMT_IN300001CA",
+        "sender":   { "providerId": "CAREVERSE-001", "softwareId": "careverse-web" },
+        "patient":  { "phn": "001122334", "firstName": "Jane", "lastName": "Doe", "dob": "1975-04-02" },
+        "location": { "pharmacyId": "NL-PHARMA-12345" },
+        "annotation": {
+          "text": "Patient switched to generic.",
+          "enteredBy": "RX001",
+          "enteredAt": "2026-04-21T15:45:00-02:30"
+        }
+      }'</code></pre>
+
+    <h3>7.2 curl &mdash; NL poll response</h3>
+<pre><code>curl -sS "$GATEWAY_BASE_URL/api/dis/response/nl/retry?messageId=11111111-1111-1111-1111-111111111111" \
+  -H "x-api-key: $SOLIS_API_KEY"</code></pre>
+
+    <h3>7.3 curl &mdash; BC publish</h3>
+<pre><code>curl -sS -X POST "$GATEWAY_BASE_URL/api/dis/bc/publish" \
+  -H "content-type: application/json" \
+  -H "x-api-key: $SOLIS_API_KEY" \
+  --data @sampleCPhAAccepted.json</code></pre>
+
+    <h3>7.4 curl &mdash; BC poll response</h3>
+<pre><code>curl -sS "$GATEWAY_BASE_URL/api/dis/response/bc/retry?messageId=&lt;id&gt;" \
+  -H "x-api-key: $SOLIS_API_KEY"</code></pre>
+
+    <h3>7.5 curl &mdash; BC adjudicate dispense claim</h3>
+<pre><code>curl -sS -X POST "$GATEWAY_BASE_URL/api/dis/bc/pharmanet/adjudicate-dispense-claim" \
+  -H "content-type: application/json" \
+  -H "x-api-key: $SOLIS_API_KEY" \
+  -d @claim.json</code></pre>
+
+    <h3>7.6 curl &mdash; Adjudicate / Totals</h3>
+<pre><code>curl -sS -X POST "$GATEWAY_BASE_URL/publish"           -H "x-api-key: $SOLIS_API_KEY" -H "content-type: application/json" -d @adj.json
+curl -sS -X POST "$GATEWAY_BASE_URL/retryAdjResponse"  -H "x-api-key: $SOLIS_API_KEY" -H "content-type: application/json" -d '{"messageId":"..."}'
+curl -sS -X POST "$GATEWAY_BASE_URL/totals"            -H "x-api-key: $SOLIS_API_KEY" -H "content-type: application/json" -d @totals.json</code></pre>
+
+    <h3>7.7 Angular typed interfaces &amp; service</h3>
+    <p>See the expandable snippet in <a href="#pathA">&sect;5.1</a> for <code>SolisDisService</code>.</p>
+
+    <!-- 8 -->
+    <h2 id="localdev">8. Local / dev setup</h2>
+    <ol>
+      <li>Developer authenticates once: <code>gcloud auth application-default login</code> &mdash; using a Google identity that has <code>secretAccessor</code> on the shared (or per-client) secret.</li>
+      <li>Set environment variables for the BFF process:
+        <pre><code>export GATEWAY_BASE_URL="http://34.98.75.115"   # today
+# export GATEWAY_BASE_URL="https://dis-gw.solis.example"  # after TLS+DNS rollout
+
+export SECRET_RESOURCE_NAME="projects/solis-public/secrets/solis-dis-gateway-api-key-careverse/versions/latest"</code></pre>
+      </li>
+      <li>Run the BFF locally on <code>http://localhost:8080</code>.</li>
+      <li>Run Angular with a dev-server proxy pointing <code>/bff/*</code> to <code>http://localhost:8080</code>.</li>
+      <li>Smoke test from the shell without the BFF (sanity only):
+<pre><code>curl -sS -I "$GATEWAY_BASE_URL/api/dis/nl/publish" -H "x-api-key: $SOLIS_API_KEY" -X POST
+# Expect 400 (empty body) or 200, NOT 403. A 403 means the key is wrong or missing.</code></pre>
+      </li>
+    </ol>
+
+    <!-- 9 -->
+    <h2 id="verify">9. Test &amp; verify checklist</h2>
+    <ol>
+      <li>Confirm the BFF can read the secret: log a masked prefix like <code>"key loaded: c9e22f14****"</code> at startup, same pattern Solis uses in <code>WebClientConfig</code>.</li>
+      <li>POST a minimal NL payload (see <a href="#examples">&sect;7.1</a>) through the BFF.</li>
+      <li>Expect HTTP 200 and a JSON body containing a <code>messageId</code>.</li>
+      <li>Within a few seconds, GET <code>/api/dis/response/nl/retry?messageId=...</code> and confirm a CeRx XML body comes back.</li>
+      <li>Repeat for BC (<code>/api/dis/bc/publish</code>) with a payload based on <a href="../src/main/resources/sampleCPhAAccepted.json">sampleCPhAAccepted.json</a>.</li>
+      <li>In Cloud Logging (Solis-side), confirm the request appears in both <code>solis-dis-dataservice</code> and <code>solis-dis-enrichmentservice</code> with matching <code>messageId</code>.</li>
+      <li>Try intentionally sending a wrong key &mdash; you should receive a 403 from Cloud Armor with no body, which confirms the policy is working.</li>
+    </ol>
+
+    <!-- 10 -->
+    <h2 id="errors">10. Error model</h2>
+    <table>
+      <tr><th>Status</th><th>Source</th><th>Meaning</th><th>What to do</th></tr>
+      <tr><td>401 / 403</td><td>Cloud Armor</td><td>Missing or wrong <code>x-api-key</code></td><td>Verify secret value in the BFF; confirm Cloud Armor rule is active</td></tr>
+      <tr><td>404</td><td>LB URL map</td><td>Path typo &mdash; request didn't match any route</td><td>Check path casing and leading <code>/api/dis/</code> for DIS routes</td></tr>
+      <tr><td>400</td><td>dataservice</td><td>Malformed JSON / missing <code>messageId</code> / schema error</td><td>Log the response body; fix payload; re-send</td></tr>
+      <tr><td>429</td><td>Cloud Armor / Cloud Run</td><td>Rate limit or backend saturation</td><td>Back off with exponential retry</td></tr>
+      <tr><td>502 / 503</td><td>Cloud Run</td><td>Cold start or backend unhealthy</td><td>Retry after 1-2s; escalate if persistent</td></tr>
+      <tr><td>504</td><td>LB or provincial system</td><td>Provincial network slow to respond</td><td>Poll the <code>retry</code> endpoint instead of holding the connection</td></tr>
+      <tr><td>200 with error payload</td><td>PharmaNet / HIAL</td><td>Provincial-level reject (e.g. invalid PHN)</td><td>Surface provincial error code to the user; do NOT retry blindly</td></tr>
+    </table>
+
+    <!-- 11 -->
+    <h2 id="ops">11. Operations</h2>
+    <h3>Rotation</h3>
+    <ol>
+      <li>Solis adds a new version to <code>solis-dis-gateway-api-key-careverse</code>: <code>gcloud secrets versions add ... --data-file=-</code>.</li>
+      <li>Solis updates the Cloud Armor rule to accept the new value (or adds a second allow rule during overlap).</li>
+      <li>CareVerse BFF picks up the new version on next cache expiry (configurable; default 10 min).</li>
+      <li>Solis disables/destroys the old version after CareVerse confirms rollout.</li>
+    </ol>
+    <h3>Revoke CareVerse</h3>
+    <pre><code>gcloud compute security-policies rules delete 110 \
+  --project=solis-public \
+  --security-policy=solis-dis-security-policy</code></pre>
+    <p>That single command stops all CareVerse traffic at the edge, without affecting any other tenant.</p>
+    <h3>Audit</h3>
+    <ul>
+      <li>LB access logs: <code>resource.type="http_load_balancer" AND resource.labels.url_map_name="solis-dis-url-map"</code> in Cloud Logging.</li>
+      <li>Secret Manager access: <code>protoPayload.serviceName="secretmanager.googleapis.com"</code> &mdash; tracks who read the key and when.</li>
+      <li>Per-client attribution: the Cloud Armor rule priority (110 = CareVerse) is present on every allowed request, so filter by <code>jsonPayload.enforcedSecurityPolicy.outcome="ACCEPT" AND jsonPayload.enforcedSecurityPolicy.priority=110</code>.</li>
+    </ul>
+    <h3>Support</h3>
+    <ul>
+      <li>Slack: <code>#solis-dis-support</code></li>
+      <li>Email: <code>dis-support@solis.example</code></li>
+      <li>On-call runbook: Solis internal wiki &ldquo;DIS Gateway&rdquo;.</li>
+    </ul>
+
+    <!-- 12 -->
+    <h2 id="glossary">12. Glossary</h2>
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>LB</td><td>GCP global external HTTP(S) Load Balancer in front of Solis services.</td></tr>
+      <tr><td>URL map</td><td>LB component that routes paths to backend services. Ours routes <code>/api/dis/*</code> to the dataservice and other paths to the adjudicate backend.</td></tr>
+      <tr><td>Cloud Armor</td><td>GCP WAF/edge policy. Currently enforces an <code>x-api-key</code> header match and default-denies everything else.</td></tr>
+      <tr><td>BFF</td><td>Backend-for-frontend. A small server that a single-page app (like Angular) talks to, which in turn calls upstream APIs. Used to keep secrets out of the browser.</td></tr>
+      <tr><td>Pub/Sub push</td><td>GCP messaging delivery mode where Pub/Sub HTTP-POSTs each message to a subscriber URL. Used to hand off from dataservice to enrichmentservice.</td></tr>
+      <tr><td>HL7 v2.1</td><td>Pipe-and-caret text format used by BC PharmaNet.</td></tr>
+      <tr><td>CeRx</td><td>Canadian e-prescribing HL7 v3 XML standard. Used by NL HIAL.</td></tr>
+      <tr><td>HIAL</td><td>Health Information Access Layer &mdash; NL's provincial integration gateway.</td></tr>
+      <tr><td>Secret Manager</td><td>GCP service for storing and versioning secrets. Accessed with IAM; never put secrets in source.</td></tr>
+    </table>
+
+    <p class="hint" style="margin-top:48px">Document owner: Solis DIS team &middot; Questions: <code>dis-support@solis.example</code></p>
+  </main>
+</div>
+</body>
+</html>

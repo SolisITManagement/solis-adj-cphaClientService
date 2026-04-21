@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>eHealth &mdash; NL Pharmacy Network</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f3f0fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; padding: 30px 20px; }
+    .card { padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-radius: 15px; background-color: #ffffff; }
+    .btn-purple { background-color: #8e44ad; color: white; border: none; transition: background-color 0.3s ease; }
+    .btn-purple:hover { background-color: #71368a; color: white; }
+    .section-title { margin-bottom: 4px; font-size: 1.15rem; font-weight: 700; }
+    .section-subtitle { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+    .msg-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .msg-row:last-child { border-bottom: none; }
+    .msg-btn { min-width: 320px; flex-shrink: 0; }
+    .msg-desc { font-size: 0.85rem; color: #555; line-height: 1.4; }
+    .badge-mandatory { background-color: #e74c3c; color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .badge-cerx { background-color: #8e44ad; color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+    .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 950px;">
+    <div class="mb-3">
+      <a href="/" class="btn btn-purple btn-sm">&larr; Back to Home</a>
+    </div>
+
+    <h2 class="mb-1" style="font-weight: 700; color: #34495e;">eHealth &mdash; NL Pharmacy Network</h2>
+    <p class="text-muted mb-4" style="font-size: 0.9rem;">
+      Newfoundland &amp; Labrador Pharmacy Network (NLPN) via HIAL &mdash; CeRx V01R04.3
+    </p>
+
+    <div class="card mb-4" style="border-left: 4px solid #8e44ad;">
+      <div class="section-title" style="color: #8e44ad;">Annotation / Patient Notes</div>
+      <div class="section-subtitle">Outbound POS &rarr; HIAL annotation requests</div>
+
+      <div class="msg-row">
+        <a href="/nl-add-patient-note" class="btn btn-purple msg-btn">Add Patient Note (COMT_IN300001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Add a free-text or coded annotation to a patient's NLPN record (e.g. patient preference, clinical observation).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-deprecate-patient-note" class="btn btn-purple msg-btn">Deprecate Patient Note (COMT_IN300101CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Mark an existing patient note as no longer applicable (correction of an erroneously entered note).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-patient-note-query" class="btn btn-purple msg-btn">Patient Note Query (COMT_IN300201CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Retrieve notes recorded against a patient, optionally filtered by note type and/or date range.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-add-note-to-record" class="btn btn-purple msg-btn">Add Note To Record (COMT_IN301001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Add an annotation against a specific record (prescription, dispense, device prescription, etc.) rather than the patient globally.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
