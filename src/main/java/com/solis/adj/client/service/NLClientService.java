@@ -47,8 +47,13 @@ public class NLClientService {
 			log.error("HTTP {} from {} service: {}", e.getStatusCode(), serviceName, e.getResponseBodyAsString(), e);
 			return "{\"error\": \"HTTP " + e.getStatusCode().value() + " from " + serviceName + " service\"}";
 		} catch (Exception e) {
-			log.error("Error calling {} service at {}: {}", serviceName, url, e.getMessage(), e);
-			return "{\"error\": \"Error calling " + serviceName + " service: " + e.getMessage() + "\"}";
+			// Include the exception class name so transport-level failures (for example
+			// java.net.BindException / AnnotatedConnectException "Can't assign requested
+			// address", UnknownHostException, SSL handshake failures) are immediately
+			// distinguishable from opaque error messages in both logs and the JSON body.
+			String errorType = e.getClass().getSimpleName();
+			log.error("Error calling {} service at {}: {}: {}", serviceName, url, errorType, e.getMessage(), e);
+			return "{\"error\": \"Error calling " + serviceName + " service: " + errorType + ": " + e.getMessage() + "\"}";
 		}
 	}
 }

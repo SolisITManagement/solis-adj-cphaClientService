@@ -33,6 +33,7 @@
     </p>
 
     <div class="card mb-4" style="border-left: 4px solid #8e44ad;">
+
       <div class="section-title" style="color: #8e44ad;">Annotation / Patient Notes</div>
       <div class="section-subtitle">Outbound POS &rarr; HIAL annotation requests</div>
 
@@ -67,6 +68,641 @@
           Add an annotation against a specific record (prescription, dispense, device prescription, etc.) rather than the patient globally.
         </div>
       </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Retract Action</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL nullification of a previously recorded ControlAct</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-retract-action" class="btn btn-purple msg-btn">Retract Action (COMT_IN600001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Nullify a previously recorded event (e.g. an erroneously submitted dispense or annotation) by referencing its original event id.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Issue Management / DUR Override</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of a pharmacist's management of a detected clinical issue</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-issue-mgmt-override" class="btn btn-purple msg-btn">Issue Mgmt / DUR Override (PORX_IN050001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record how a detected DUR issue (interaction, allergy, duplicate therapy, etc.) was managed &mdash; typically an override with clinical justification.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Refusal to Dispense</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL notification that a prescription was refused</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-refusal-to-dispense" class="btn btn-purple msg-btn">Refusal to Dispense (PORX_IN090001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that the pharmacist declined to dispense a prescription (e.g. documented allergy, unsafe therapy), with a coded reason.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Dispense Responsibility Transfer</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL hand-off of dispensing responsibility to another pharmacist/facility</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-dispense-transfer" class="btn btn-purple msg-btn">Dispense Responsibility Transfer (PORX_IN110001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Transfer clinical/dispensing responsibility for a prior dispense event to a different provider or service delivery location.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Prescription Create &mdash; Medication + Device</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL new prescription activation</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-activate-rx" class="btn btn-purple msg-btn">Activate Prescription (PORX_IN010380CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Activate a new medication prescription in the patient's NLPN record &mdash; DIN, quantity, directions, refills and prescriber.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-activate-device-rx" class="btn btn-purple msg-btn">Activate Device Prescription (PORX_IN010300CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Activate a new device (e.g. glucose meter, spacer) prescription against the patient's NLPN record.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Prescription Suspend / Resume / Abort</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL lifecycle changes to an existing prescription</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-suspend-rx" class="btn btn-purple msg-btn">Suspend Prescription (PORX_IN010440CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Temporarily suspend an active prescription (e.g. patient hospitalised, therapy paused) with a coded reason.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-resume-rx" class="btn btn-purple msg-btn">Resume Prescription (PORX_IN010520CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Resume a previously suspended prescription (e.g. patient discharged from hospital) with a coded reason.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-abort-dispense-auth" class="btn btn-purple msg-btn">Abort Dispense Authorization (PORX_IN010560CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Cancel the remaining dispense authorisation on a prescription (patient no longer needs further dispenses).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-abort-rx" class="btn btn-purple msg-btn">Abort Prescription (PORX_IN010840CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Abort an active prescription entirely (e.g. therapy changed, prescribed in error) with a coded reason.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Pre-determination / DUR Check Results</div>
+        <div class="section-subtitle">Inbound HIAL &rarr; POS &mdash; driven by the {@code simulate} field on Activate Prescription / Activate Device Prescription</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-activate-rx" class="btn btn-purple msg-btn">Pre-determination OK (PORX_IN010640CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-cerx">CeRx</span></div>
+          Clinical pre-determination approved (inbound only). Trigger from Activate Prescription with
+          <code>Prescription.simulate = "predetermination-ok"</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-activate-rx" class="btn btn-purple msg-btn">Pre-determination Not OK (PORX_IN010630CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-cerx">CeRx</span></div>
+          Clinical pre-determination raised DUR issue(s) (inbound only). Trigger from Activate Prescription
+          (or Activate Device Prescription) with <code>Prescription.simulate = "predetermination-not-ok"</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Medication Dispense Processing</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of a completed medication dispense</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-dispense" class="btn btn-purple msg-btn">Record Medication Dispense (PORX_IN020190CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that medication dispense processing (preparation, packaging, contraindication checks) for a
+          prescribed quantity has been performed and the medication is awaiting pickup.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Device Dispense Processing</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of a completed device dispense</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-device-dispense" class="btn btn-purple msg-btn">Record Device Dispense (PORX_IN020060CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that device dispense processing for a prescribed device (e.g. glucose meter, spacer) has been
+          performed and the device is awaiting pickup.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Dispense Pickup</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record that a previously processed dispense was picked up</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-pickup" class="btn btn-purple msg-btn">Record Dispense Pickup (PORX_IN020080CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that the patient (or their agent) has collected a previously processed dispense. Accepted response
+          is <code>PORX_IN020090CA</code>; set <code>Pickup.simulate = "refused"</code> to exercise
+          <code>PORX_IN020100CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Ward Stock / Supply Event</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of a bulk medication supply to a facility</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-supply-event" class="btn btn-purple msg-btn">Record Supply Event / Ward Stock (PORX_IN020210CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that a bulk quantity of a medication has been supplied to a facility (e.g. hospital ward stock).
+          Accepted response is <code>PORX_IN020220CA</code>; set <code>SupplyEvent.simulate = "refused"</code> to
+          exercise <code>PORX_IN020230CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Dispense Reversal</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL request that a previously processed dispense be marked reversed</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-dispense-reversal" class="btn btn-purple msg-btn">Record Dispense Reversal (PORX_IN020370CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record that a previously processed dispense was reversed (e.g. not picked up, disposed of). Accepted
+          response is <code>PORX_IN020380CA</code>; set <code>DispenseReversal.simulate = "refused"</code> to
+          exercise <code>PORX_IN020390CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Other Medication / OTC</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record &amp; update of patient-reported or OTC medication not captured as a prescription</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-other-med" class="btn btn-purple msg-btn">Record Other Medication (PORX_IN040020CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record an OTC / patient-reported medication against the patient's NLPN record. Accepted response is
+          <code>PORX_IN040030CA</code>; set <code>OtherMedication.simulate = "refused"</code> to exercise
+          <code>PORX_IN040040CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-update-other-med" class="btn btn-purple msg-btn">Update Other Medication (PORX_IN040070CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Update a previously recorded OTC / patient-reported medication. Accepted response is
+          <code>PORX_IN040080CA</code>; set <code>OtherMedication.simulate = "refused"</code> to exercise
+          <code>PORX_IN040090CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Consent</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of patient consent to share pharmacy information</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-consent" class="btn btn-purple msg-btn">Record Consent (RCMR_IN010003CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record patient consent (e.g. to share their pharmacy record). Accepted response is generic
+          <code>MCCI_IN000002CA</code>; set <code>Consent.simulate = "refused"</code> to exercise
+          <code>MCCI_IN000003CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Adverse Reactions</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record &amp; update of documented adverse drug reactions</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-adverse-reaction" class="btn btn-purple msg-btn">Record Adverse Reaction (REPC_IN000004CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record an adverse drug reaction against the patient's NLPN record. Accepted response is
+          <code>REPC_IN000005CA</code>; set <code>AdverseReaction.simulate = "refused"</code> to exercise
+          <code>REPC_IN000006CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-update-adverse-reaction" class="btn btn-purple msg-btn">Update Adverse Reaction (REPC_IN000008CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Update a previously recorded adverse drug reaction. Accepted response is
+          <code>REPC_IN000009CA</code>; set <code>AdverseReaction.simulate = "refused"</code> to exercise
+          <code>REPC_IN000010CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Allergy / Intolerance</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL add &amp; update of documented allergies and intolerances</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-add-allergy" class="btn btn-purple msg-btn">Add Allergy / Intolerance (REPC_IN000012CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Add an allergy or intolerance against the patient's NLPN record. Accepted response is
+          <code>REPC_IN000013CA</code>; set <code>Allergy.simulate = "refused"</code> to exercise
+          <code>REPC_IN000014CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-update-allergy" class="btn btn-purple msg-btn">Update Allergy / Intolerance (REPC_IN000020CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Update a previously recorded allergy or intolerance. Accepted response is
+          <code>REPC_IN000021CA</code>; set <code>Allergy.simulate = "refused"</code> to exercise
+          <code>REPC_IN000022CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Medical Conditions</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record &amp; update of documented medical conditions</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-medical-condition" class="btn btn-purple msg-btn">Record Medical Condition (REPC_IN000028CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record a patient's medical condition (ICD-10-CA). Accepted response is
+          <code>REPC_IN000029CA</code>; set <code>MedicalCondition.simulate = "refused"</code> to exercise
+          <code>REPC_IN000030CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-update-medical-condition" class="btn btn-purple msg-btn">Update Medical Condition (REPC_IN000032CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Update a previously recorded medical condition. Accepted response is
+          <code>REPC_IN000033CA</code>; set <code>MedicalCondition.simulate = "refused"</code> to exercise
+          <code>REPC_IN000034CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Professional Services</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of pharmacist-provided professional services</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-prof-service" class="btn btn-purple msg-btn">Record Professional Service (REPC_IN000044CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record a pharmacist-provided professional service (e.g. medication review). Accepted response is
+          <code>REPC_IN000045CA</code>; set <code>ProfessionalService.simulate = "refused"</code> to exercise
+          <code>REPC_IN000046CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Basic Observations</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL record of basic clinical observations (vital signs, measurements)</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-record-basic-observation" class="btn btn-purple msg-btn">Record Basic Observation (REPC_IN000051CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Record a basic clinical observation (LOINC-coded vital sign or measurement). Accepted response is
+          <code>REPC_IN000052CA</code>; set <code>BasicObservation.simulate = "refused"</code> to exercise
+          <code>REPC_IN000053CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Medication / Device Queries</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL queries against the patient's NLPN profile (Section 15). All queries
+          support <code>Query.simulate</code>: blank for one sample record, <code>"empty"</code> for a zero-record response,
+          <code>"refused"</code> for a generic <code>MCCI_IN000003CA</code> rejection.</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-dev-disp-detail" class="btn btn-purple msg-btn">Query Device Dispense Detail (PORX_IN060050CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query a single device dispense by id. Default response is <code>PORX_IN060060CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-dev-disp-summary" class="btn btn-purple msg-btn">Query Device Dispense Summary (PORX_IN060070CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query device dispenses for the patient over a date range. Default response is <code>PORX_IN060080CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-dev-rx-detail" class="btn btn-purple msg-btn">Query Device Rx Detail (PORX_IN060090CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query a single device prescription by id. Default response is <code>PORX_IN060100CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-dev-disp-by-rx" class="btn btn-purple msg-btn">Query Device Dispenses by Rx (PORX_IN060110CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query device dispenses for a specific device prescription. Default response is <code>PORX_IN060120CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-dev-rx-summary" class="btn btn-purple msg-btn">Query Device Rx Summary (PORX_IN060130CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query device prescriptions for the patient over a date range. Default response is <code>PORX_IN060140CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-rx-detail" class="btn btn-purple msg-btn">Query Medication Rx Detail (PORX_IN060170CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query a single medication prescription's detail. Default response is <code>PORX_IN060180CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-disp-detail" class="btn btn-purple msg-btn">Query Medication Dispense Detail (PORX_IN060210CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query a single medication dispense by id. Default response is <code>PORX_IN060220CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-disp-summary" class="btn btn-purple msg-btn">Query Medication Dispense Summary (PORX_IN060230CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query medication dispenses for the patient over a date range. Default response is <code>PORX_IN060240CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-rx-detail-rx" class="btn btn-purple msg-btn">Query Medication Rx Detail (by Rx) (PORX_IN060250CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query a medication prescription's detail by rx id. Default response is <code>PORX_IN060260CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-disp-by-rx" class="btn btn-purple msg-btn">Query Medication Dispenses by Rx (PORX_IN060270CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query medication dispenses for a specific prescription. Default response is <code>PORX_IN060280CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-rx-summary" class="btn btn-purple msg-btn">Query Medication Rx Summary (PORX_IN060290CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query medication prescriptions for the patient over a date range. Default response is <code>PORX_IN060300CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-profile-generic" class="btn btn-purple msg-btn">Query Medication Profile (Generic) (PORX_IN060350CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query the patient's full medication profile (generic view). Default response is <code>PORX_IN060360CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-profile-detail" class="btn btn-purple msg-btn">Query Medication Profile Detail (PORX_IN060370CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query the patient's medication profile (detail view). Default response is <code>PORX_IN060380CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-med-profile-summary" class="btn btn-purple msg-btn">Query Medication Profile Summary (PORX_IN060390CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query the patient's medication profile (summary view). Default response is <code>PORX_IN060400CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-other-med" class="btn btn-purple msg-btn">Query Other Medication / OTC (PORX_IN060450CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query OTC / patient-reported medications recorded against the patient. Default response is <code>PORX_IN060460CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-remaining-fill" class="btn btn-purple msg-btn">Query Remaining Fill by Prescriber (PORX_IN060470CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query summary of remaining fills for the patient grouped by prescriber. Default response is <code>PORX_IN060480CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-unfilled-rx" class="btn btn-purple msg-btn">Query Unfilled Prescription Summary (PORX_IN060490CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query summary of currently unfilled prescriptions for the patient. Default response is <code>PORX_IN060500CA</code>.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee;">
+        <div class="section-title" style="color: #8e44ad;">Clinical Observation / Service Queries</div>
+        <div class="section-subtitle">Outbound POS &rarr; HIAL queries that complement Sections 17-21 record/update flows.
+          Same <code>Query.simulate</code> contract as Section 15 (blank / <code>"empty"</code> / <code>"refused"</code>).</div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-adverse-reactions" class="btn btn-purple msg-btn">Query Adverse Reactions (REPC_IN000001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query adverse drug reactions recorded against the patient. Default response is <code>REPC_IN000002CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-allergies" class="btn btn-purple msg-btn">Query Allergies / Intolerances (REPC_IN000015CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query allergies and intolerances recorded against the patient. Default response is <code>REPC_IN000016CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-medical-conditions" class="btn btn-purple msg-btn">Query Medical Conditions (REPC_IN000023CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query medical conditions recorded against the patient. Default response is <code>REPC_IN000024CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-condition-history" class="btn btn-purple msg-btn">Query Medical Condition History (REPC_IN000025CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query the revision history for medical conditions. Default response is <code>REPC_IN000026CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-prof-services" class="btn btn-purple msg-btn">Query Professional Services (REPC_IN000041CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query pharmacist-provided professional services for the patient. Default response is <code>REPC_IN000042CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-query-basic-observations" class="btn btn-purple msg-btn">Query Basic Observations (REPC_IN000054CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">CeRx</span></div>
+          Query basic clinical observations (vital signs, measurements) for the patient. Default response is <code>REPC_IN000055CA</code>.
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-title" style="color: #8e44ad;">Client Registry (Section 22)</div>
+
+      <div class="msg-row">
+        <a href="/nl-cr-find-candidates" class="btn btn-purple msg-btn">Find Candidates Query (PRPA_IN101103CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Client Registry V02R02.0</span></div>
+          Demographic search of the Provincial Client Registry. Default response is <code>PRPA_IN101104CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-cr-get-demographics" class="btn btn-purple msg-btn">Get Person Demographics Query (PRPA_IN101101CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Client Registry V02R02.0</span></div>
+          Retrieve full demographics for a known PHN. Default response is <code>PRPA_IN101102CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-cr-add-person" class="btn btn-purple msg-btn">Add Person Request (PRPA_IN101201CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Client Registry V02R02.0</span></div>
+          Register a new person in the Client Registry. Default response is <code>PRPA_IN101202CA</code> (accept) or <code>PRPA_IN101203CA</code> (reject).
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-cr-revise-person" class="btn btn-purple msg-btn">Revise Person Request (PRPA_IN101204CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Client Registry V02R02.0</span></div>
+          Update demographics for an existing person. Default response is <code>PRPA_IN101205CA</code> (accept) or <code>PRPA_IN101206CA</code> (reject).
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-title" style="color: #8e44ad;">Polling, Broadcast &amp; Password (Section 23)</div>
+
+      <div class="msg-row">
+        <a href="/nl-poll-request" class="btn btn-purple msg-btn">Send Poll Request (MCCI_IN100001CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Shared V02R02.0</span></div>
+          Pull next queued message from the HIAL inbox. Default response is <code>MCCI_IN100003CA</code> (empty queue) or a queued unsolicited inbound (PRPA_IN101002/004/999, NLPN_IN100110) when <code>simulate=&quot;next&quot;</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-poll-fetch-next" class="btn btn-purple msg-btn">Poll &amp; Fetch Next (MCCI_IN100004CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Shared V02R02.0</span></div>
+          Acknowledge the previous polled message and immediately request the next. Default response is <code>MCCI_IN100003CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-poll-exception" class="btn btn-purple msg-btn">Send Poll Exception Ack (MCCI_IN100005CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">Shared V02R02.0</span></div>
+          Notify HIAL that a polled message could not be consumed. Default response is generic <code>MCCI_IN000002CA</code> ack.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-broadcast-topics" class="btn btn-purple msg-btn">Query Broadcast Topics (NLPN_IN100120CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">NL-Defined V02R02.0</span></div>
+          List the broadcast topics this user is subscribed to. Default response is <code>NLPN_IN100130CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-broadcast-subscribe" class="btn btn-purple msg-btn">Subscribe Broadcast Topic (NLPN_IN100140CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">NL-Defined V02R02.0</span></div>
+          Subscribe to a broadcast topic so future <code>NLPN_IN100110CA</code> notifications appear in the polling queue. Default response is <code>NLPN_IN100150CA</code>.
+        </div>
+      </div>
+
+      <div class="msg-row">
+        <a href="/nl-update-password" class="btn btn-purple msg-btn">Update Password Request (NLPN_IN100200CA)</a>
+        <div class="msg-desc">
+          <div class="badges"><span class="badge-mandatory">Mandatory</span><span class="badge-cerx">NL-Defined V02R02.0</span></div>
+          Change the POS user&apos;s NLPN account password. Default response is <code>NLPN_IN100210CA</code>.
+        </div>
+      </div>
+
     </div>
 
   </div>

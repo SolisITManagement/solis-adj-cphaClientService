@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>eHealth - NL Query Medication Prescription Summary (PORX_IN060290CA)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; background-color: #f3f0fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .full-page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .content { flex: 1; display: flex; padding: 10px; gap: 10px; min-height: 0; }
+    .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .panel-right { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+    textarea { flex: 1; resize: none; font-family: monospace; font-size: 13px; padding: 10px; border: 1px solid #ccc; overflow: auto; background-color: #fbfaff; }
+    pre { font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ccc; overflow: auto; background-color: #efe9f9; border-left: 4px solid #8e44ad; white-space: pre-wrap; word-wrap: break-word; margin: 0; max-height: 300px; }
+    .submit-btn { padding: 10px 15px; border-top: 1px solid #ccc; background-color: #efe9f9; flex-shrink: 0; }
+    .btn-purple { background-color: #8e44ad; color: white; width: 100%; }
+    .btn-purple:hover { background-color: #71368a; color: white; }
+    h1 { margin: 0; padding: 10px; background-color: #e5dbef; border-bottom: 1px solid #ccc; font-size: 1.3rem; flex-shrink: 0; }
+    .top-bar { flex-shrink: 0; }
+    .resp-section { margin-bottom: 6px; }
+    .resp-section label { margin-bottom: 2px; }
+    .info-banner { padding: 8px 12px; background-color: #fff3cd; border: 1px solid #ffe69c; border-radius: 4px; font-size: 0.85rem; color: #664d03; margin: 6px 10px; }
+  </style>
+</head>
+<body>
+<div class="full-page">
+  <div class="top-bar p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+    <form action="/ehealth-nl" method="get" style="margin: 0;">
+      <button type="submit" class="btn btn-purple btn-sm">&larr; Back to NL Pharmacy Network</button>
+    </form>
+  </div>
+
+  <h1>eHealth &mdash; NL Query Medication Prescription Summary (PORX_IN060290CA)</h1>
+  <div class="info-banner">
+    <strong>Query simulation variants</strong>: leave <code>Query.simulate</code> blank to receive a sample
+    PORX_IN060300CA response with one record; set <code>"empty"</code> for a zero-record response;
+    set <code>"refused"</code> for a generic <code>MCCI_IN000003CA</code> rejection.
+  </div>
+
+  <form id="jsonForm" method="post" action="/callNlHl7Event" class="content">
+    <div class="panel" style="width: 50%;">
+      <label for="jsonInput" class="form-label fw-bold">Request <span th:if="${messageId != null}" style="font-weight: normal; color: #888; font-size: 0.85em;">(messageId: <span th:text="${messageId}"></span>)</span></label>
+      <textarea id="jsonInput" name="jsonData" th:text="${jsonData}"></textarea>
+    </div>
+    <input type="hidden" name="returnView" value="nl-query-med-rx-summary"/>
+    <div class="panel-right" style="width: 50%; gap: 6px;">
+      <div class="resp-section" th:if="${hl7Request != null}">
+        <label class="form-label" style="font-weight: 600; color: #2980b9;">CeRx Request (built by enrichment service on GCP)</label>
+        <pre id="hl7ReqPre" th:text="${hl7Request}" style="border-color: #2980b9; border-left: 4px solid #2980b9; background-color: #eaf2f8;"></pre>
+      </div>
+      <div class="resp-section" th:if="${hl7Response != null}">
+        <label class="form-label" style="font-weight: 600; color: #27ae60;">CeRx Response (from NL HIAL)</label>
+        <pre id="hl7ResPre" th:text="${hl7Response}" style="border-color: #27ae60; border-left: 4px solid #27ae60; background-color: #eafaf1;"></pre>
+      </div>
+      <div class="resp-section">
+        <label th:if="${response == null}" class="form-label" style="font-weight: 600; color: #8e44ad;">Response</label>
+        <label th:if="${response != null}" class="form-label" style="font-weight: 600; color: #8e44ad;">Full Response (from Database)</label>
+        <pre id="fullRespPre" th:text="${response}" th:if="${response != null}"
+          style="border-color: #8e44ad; border-left: 4px solid #8e44ad; background-color: #efe9f9;"></pre>
+        <pre th:if="${response == null}"
+          style="border: 1px solid #ccc; border-left: 4px solid #ccc; background-color: #f9f9f9; color: #999;">No response yet</pre>
+      </div>
+      <div th:if="${executionTime != null}" style="font-size: 13px; color: #555;">
+        Execution Time: <span th:text="${executionTime}">0.000</span> seconds
+      </div>
+    </div>
+  </form>
+
+  <div class="submit-btn mt-2">
+    <button type="submit" name="action" value="callNlHl7Event" form="jsonForm" class="btn btn-purple">Submit JSON</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function formatXml(xml) {
+    var formatted = '', indent = '', tab = '  ';
+    xml.split(/>\s*</).forEach(function(node, i) {
+      if (node.match(/^\/\w/)) indent = indent.substring(tab.length);
+      formatted += (i > 0 ? indent + '<' : '') + node + (i < xml.split(/>\s*</).length - 1 ? '>\n' : '');
+      if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('?') && !node.startsWith('!')) indent += tab;
+    });
+    return formatted.trim();
+  }
+  function formatContent(el) {
+    if (!el) return;
+    var text = el.textContent.trim();
+    if (!text) return;
+    try { el.textContent = JSON.stringify(JSON.parse(text), null, 2); return; } catch(e) {}
+    if (text.charAt(0) === '<') { try { el.textContent = formatXml(text); } catch(e) {} }
+  }
+  formatContent(document.getElementById('hl7ReqPre'));
+  formatContent(document.getElementById('hl7ResPre'));
+  formatContent(document.getElementById('fullRespPre'));
+});
+</script>
+</body>
+</html>

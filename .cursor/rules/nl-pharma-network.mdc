@@ -1,0 +1,93 @@
+---
+description: Architecture and one-line-registry pattern for adding NL Pharmacy Network (NLPN) HL7 v3 messages end-to-end across solis-adj-cphaClientService (outbound UI + JSON payload), solis-dis-dataservice (Pub/Sub relay) and solis-dis-enrichmentservice (CeRx XML builders + HIAL simulation + tests). Extensible to other provinces.
+alwaysApply: false
+---
+
+# NL Pharmacy Network message development
+
+All three services live under `/Users/lakhbirchatha/Documents/projects/tmp/`:
+`solis-adj-cphaClientService` (POS test client, Spring Boot, port 9090) -> `solis-dis-dataservice` (HTTP ingress, publishes to Pub/Sub) -> `solis-dis-enrichmentservice` (Pub/Sub push, builds CeRx XML, talks to HIAL, returns simulated ACK).
+
+## End-to-end flow
+
+```mermaid
+flowchart LR
+    UI["nl-*.html"] -->|"POST /callNlHl7Event"| NLC["NLController"]
+    NLC -->|"buildFullPayload(view)"| PB["NLPayloadBuilder\nEVENT_CONFIG"]
+    PB -->|"JSON + Header.interactionId"| NCS["NLClientService"]
+    NCS -->|"HTTPS"| DS["solis-dis-dataservice"]
+    DS -->|"Pub/Sub"| NMC["NlpnMessageController"]
+    NMC -->|"lookup interactionId"| REG["NlpnBuilderConfig\n.nlpnBuilderMap"]
+    REG --> BLD["*Builder -> CeRx XML"]
+    BLD --> HCS["HialClientService\n.buildSimulatedAck"]
+    HCS -->|"AA / AR / alt-variant"| INB["inbound XML"]
+    INB --> NMC --> DS --> NCS --> NLC --> UI
+```
+
+## Key registries and entry points
+
+### solis-adj-cphaClientService
+- `src/main/java/com/solis/adj/client/util/NLPayloadBuilder.java` - `EVENT_CONFIG` is the view -> `EventConfig(interactionId, versionCode, province)` map; `getBusinessDataDefault(view)` supplies sample JSON; `buildFullPayload(json, view)` merges Header/Sender/Patient/Location then branches on `interactionId` for the business section.
+- `src/main/java/com/solis/adj/client/controller/NLController.java` - one `@GetMapping("/nl-*")` per view delegating to `serveNlPage(model, view)`; single `@PostMapping("/callNlHl7Event")` for all NL messages calling `NLClientService.sendNlHl7Request`.
+- `src/main/java/com/solis/adj/client/service/NLClientService.java` - single outbound `POST` to `${target.dis.nl.hl7.event.url}` for every NL message.
+- `src/main/resources/templates/nl-*.html` - one template per operation; hidden `returnView` must equal `EVENT_CONFIG` key.
+- `src/main/resources/templates/ehealth-nl.html` - landing page listing all NL operations.
+- `HomeController` - `nlCount` is derived from `EVENT_CONFIG.size()`; no manual update needed.
+
+### solis-dis-enrichmentservice
+- `src/main/java/com/solis/dis/config/NlpnBuilderConfig.java` - `nlpnBuilderMap` is the `interactionId -> NlpnMessageBuilder` registry.
+- `src/main/java/com/solis/dis/hl7/nlpn/*Builder.java` - per-interaction builders; each has `public static final String INTERACTION_ID` and implements `NlpnMessageBuilder.build(JsonNode)` using `CerxEnvelope` + `StringBuilder` (+ `RxLifecycleSupport` for lifecycle messages). No JAXB, no templating engine.
+- `src/main/java/com/solis/dis/service/nlpn/HialClientService.java` - `buildSimulatedAck(interactionId, json)` is a `switch` on `interactionId` producing the inbound response variant (AA / AR / alternative) based on a `simulate=...` flag in the payload.
+- `src/main/java/com/solis/dis/controller/nlpn/NlpnMessageController.java` - Pub/Sub push endpoint; looks up the builder by `interactionId` and dispatches.
+- Tests: `src/test/java/.../hl7/nlpn/*BuilderTest.java` (XML assertions via `DocumentBuilderFactory`) and `src/test/java/.../service/nlpn/HialClientService*SimulationTest.java` (per-flow accepted/refused/alternative matrices).
+
+## Checklist: add a new NL outbound message
+
+cphaClientService (5 touch points):
+1. `templates/nl-<kebab>.html` - copy from `nl-activate-rx.html`; set title and hidden `returnView=nl-<kebab>`.
+2. `NLPayloadBuilder.EVENT_CONFIG` - add `nl-<kebab>` -> `EventConfig("<PORX_IN...>", "V01R04.3", "NL")`.
+3. `NLPayloadBuilder.getBusinessDataDefault` - add `case "nl-<kebab>"` returning sample business JSON.
+4. `NLPayloadBuilder.buildFullPayload` - add `case "<PORX_IN...>"` merging the correct top-level section(s) via `copyOrDefault`.
+5. `NLController` - add `@GetMapping("/nl-<kebab>")` calling `serveNlPage(model, "nl-<kebab>")`.
+6. `ehealth-nl.html` - add link row.
+
+enrichmentservice (4 touch points):
+1. `hl7/nlpn/<Message>Builder.java` - implement `NlpnMessageBuilder` using `CerxEnvelope.openEnvelope` / `appendEnvelopeClose`; declare `INTERACTION_ID`; annotate with `@Component`.
+2. `NlpnBuilderConfig.nlpnBuilderMap` - constructor-inject the new builder and `map.put(...)`.
+3. `HialClientService.buildSimulatedAck` - add `case "<PORX_IN...>"` returning the appropriate AA / AR / alt-variant XML; branch on payload `simulate` field.
+4. Tests: `<Message>BuilderTest` + `HialClientService<Message>SimulationTest` following the `ActivateRxBuilderTest` / `HialClientServiceActivateRxSimulationTest` shape.
+
+## Checklist: add an NL inbound-only message (no outbound trigger)
+
+Some spec sections (e.g. section 8 Pre-determination PORX_IN010630CA / PORX_IN010640CA) are HIAL-push only. No cphaClientService changes. In enrichmentservice:
+1. Extend an existing outbound's `build<X>SimulatedAck` to recognise additional `simulate=<variant>` values and produce the new inbound XML root.
+2. Add a `HialClientService<Flow><Variant>SimulationTest` with the variant matrix.
+
+## Variant test matrix per new message
+
+Builder tests: (a) well-formed envelope with correct root element + namespace; (b) header stamping (`Header.messageId` -> `<id/@extension>`, `interactionId`, `versionCode`, `acceptAckCode`); (c) payload field assertions; (d) XML special-char escaping (`& < > " '`); (e) minimum-required-fields fallback.
+
+Simulation tests: (a) default -> `typeCode="AA"` + accepted root; (b) `simulate=refused` -> `typeCode="AR"` + refused root + reasonCode/detectedIssue; (c) `targetMessage/id/@extension` equals request `Header.messageId`; (d) missing `Header.messageId` -> `SIMULATED` fallback; (e) alternative variants where applicable (e.g. predetermination-ok / -not-ok on activate-rx).
+
+## Province extensibility
+
+This service already has BC alongside NL (see `CphaClientService.sendHL7Request`, `target.dis.bc.hl7.event.url`). To add another province (e.g. Alberta):
+1. cphaClientService: new config property `target.dis.ab.hl7.event.url`, new `ABClientService.sendAbHl7Request`, new `ABController` + `ehealth-ab.html` landing + `ABPayloadBuilder` with its own `EVENT_CONFIG`.
+2. enrichmentservice: duplicate the `hl7/nlpn/` package as `hl7/abpn/`, clone `NlpnBuilderConfig` -> `AbpnBuilderConfig`, clone `HialClientService` -> `AbpnHialClientService` (or extract shared helpers), add new controller `/api/dis/ab/publish`.
+3. dataservice: new topic / subscription for the AB publish endpoint.
+Interaction-id prefixes used so far: `PORX_IN*` (prescriptions), `COMT_IN*` (communications/notes), `POSC_IN*` (NLCHI service catalog). Same convention applies per province.
+
+## Operational notes (current workspace)
+
+- JVM uses `java.net.preferIPv4Stack=true` set in `CphaClientApplication.main` + IPv4-only resolver in `WebClientConfig` to avoid `EADDRNOTAVAIL` ("Can't assign requested address") on macOS when calling the literal IPv4 GCLB.
+- Local runs need `GOOGLE_CLOUD_PROJECT=solis-public` (or `gcloud config set project solis-public`) for Secret Manager to resolve `solis-dis-gateway-api-key`.
+- Truststore default path: `${user.home}/.solis/solis-truststore.jks` (override via `SOLIS_TRUSTSTORE_PATH`). Bound to the self-signed `solis-dis-and-adj-cert` on GCLB `34.98.75.115`.
+- Catch-all error messages now include `exception.getClass().getSimpleName()` in `NLClientService` / `CphaClientService`.
+
+## Current backlog
+
+Plan for NL sections 8/9/10 (predetermination + medication dispense + device dispense): `.cursor/plans/nl-sections-8-9-10_2470e046.plan.md`.
+
+## Using this rule
+
+In a fresh chat type `@nl-pharma-network` to attach this rule, then describe the new message(s) to add.
